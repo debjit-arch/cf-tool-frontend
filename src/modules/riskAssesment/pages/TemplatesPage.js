@@ -783,6 +783,7 @@ const RiskTemplateTable = () => {
       const newRisk = {
         ...risk,
         riskId: nextRiskId,
+        date:new Date().toISOString().split("T")[0],
         probability: String(risk.probability),
         numberOfDays: String(risk.numberOfDays),
         likelihoodAfterTreatment: String(risk.likelihoodAfterTreatment),
