@@ -650,22 +650,13 @@ export default function TaskManagement({ riskFormData = {} }) {
   };
 
   // --- Employee options based on selected department ---
-  const empOptions = useMemo(() => {
-    const options = (users || [])
-      .filter((u) => String(u.department._id) === String(formData.department))
-      .map((u) => ({ value: u._id, label: u.name }));
+ const empOptions = useMemo(() => {
+  const options = (users || [])
+    .filter((u) => u.department?._id && String(u.department._id) === String(formData.department))
+    .map((u) => ({ value: u._id, label: u.name }));
 
-    console.log(
-      "[Employee Options]",
-      "Department:",
-      formData.department,
-      "Users:",
-      users,
-      "Filtered Options:",
-      options
-    );
-    return options;
-  }, [users, formData.department]);
+  return options;
+}, [users, formData.department]);
 
   const addTask = async () => {
     if (
