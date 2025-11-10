@@ -209,7 +209,7 @@ const SoaPage = () => {
           <thead>
             <tr style={{ backgroundColor: "#f8f9fa" }}>
               <th style={{ border: "1px solid #dee2e6", padding: "10px" }}>
-                ID
+                Sl.no 
               </th>
               <th style={{ border: "1px solid #dee2e6", padding: "10px" }}>
                 Control
@@ -229,10 +229,10 @@ const SoaPage = () => {
             </tr>
           </thead>
           <tbody>
-            {currentControls.map((control) => (
+            {currentControls.map((control, index) => (
               <tr key={control.id}>
                 <td style={{ border: "1px solid #dee2e6", padding: "10px" }}>
-                  {control.id}
+                  {indexOfFirstControl + index + 1}
                 </td>
                 <td style={{ border: "1px solid #dee2e6", padding: "10px" }}>
                   {control.category}
@@ -346,10 +346,120 @@ const SoaPage = () => {
               Next →
             </button>
           </div>
+
+
+
         )}
+
+
+
+        
+
+
+        <div
+        style={{
+          position: "fixed",
+          bottom: "30px",
+          left: "30px",
+          zIndex: 100,
+        }}
+      >
+        <button
+          onClick={() => history.push("/documentation/mld")}
+          style={{
+            width: "60px",
+            height: "60px",
+            borderRadius: "50%",
+            background: "linear-gradient(45deg, #3498db, #2980b9)",
+            color: "white",
+            border: "none",
+            fontSize: "24px",
+            cursor: "pointer",
+            boxShadow: "0 4px 15px rgba(52, 152, 219, 0.3)",
+            transition: "all 0.3s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.transform = "scale(1.1)";
+            e.target.style.boxShadow = "0 6px 20px rgba(52, 152, 219, 0.4)";
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.transform = "scale(1)";
+            e.target.style.boxShadow = "0 4px 15px rgba(52, 152, 219, 0.3)";
+          }}
+          title="Go to MLD"
+        >
+          MLD
+        </button>
+      </div>
+
+
+
+
+
+
+
+
+
+      
+        <div
+        style={{
+          position: "fixed",
+          bottom: "30px",
+          right: "30px",
+          zIndex: 100,
+        }}
+      >
+        <button
+          onClick={() => history.push("/risk-assessment/saved")}
+          style={{
+            width: "60px",
+            height: "60px",
+            borderRadius: "50%",
+            background: "linear-gradient(45deg, #3498db, #2980b9)",
+            color: "white",
+            border: "none",
+            fontSize: "24px",
+            cursor: "pointer",
+            boxShadow: "0 4px 15px rgba(52, 152, 219, 0.3)",
+            transition: "all 0.3s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.target.style.transform = "scale(1.1)";
+            e.target.style.boxShadow = "0 6px 20px rgba(52, 152, 219, 0.4)";
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.transform = "scale(1)";
+            e.target.style.boxShadow = "0 4px 15px rgba(52, 152, 219, 0.3)";
+          }}
+          title="Go to MLD"
+        >
+          📁
+        </button>
+      </div>
       </div>
     </div>
   );
 };
 
 export default SoaPage;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

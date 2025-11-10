@@ -67,7 +67,7 @@ const ControlsPage = () => {
     }
   };
 
-  // NEW: Pagination logic
+  // Pagination logic
   const indexOfLastControl = currentPage * controlsPerPage;
   const indexOfFirstControl = indexOfLastControl - controlsPerPage;
   const currentControls = controls.slice(
@@ -78,7 +78,7 @@ const ControlsPage = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // NEW: Fixed "Back to Dashboard" button styles
+  // Fixed "Back to Dashboard" button styles
   const backBtnStyle = {
     position: "fixed",
     top: "30px",
@@ -110,7 +110,7 @@ const ControlsPage = () => {
     e.target.style.transform = "translateY(0)";
   };
 
-  // NEW: Pagination button styles
+  // Pagination button styles
   const paginationButtonStyle = {
     padding: "8px 14px",
     borderRadius: "6px",
@@ -139,7 +139,7 @@ const ControlsPage = () => {
 
   return (
     <div style={{ padding: "20px", maxWidth: "1000px", margin: "60px auto 0" }}>
-      {/* NEW: Back to Dashboard Button */}
+      {/* Back to Dashboard Button */}
       <button
         style={backBtnStyle}
         onClick={() => history.push("/documentation")}
@@ -174,7 +174,7 @@ const ControlsPage = () => {
           <thead>
             <tr style={{ backgroundColor: "#f8f9fa" }}>
               <th style={{ border: "1px solid #dee2e6", padding: "10px" }}>
-                ID
+                Sl.No
               </th>
               <th style={{ border: "1px solid #dee2e6", padding: "10px" }}>
                 Control
@@ -188,10 +188,10 @@ const ControlsPage = () => {
             </tr>
           </thead>
           <tbody>
-            {currentControls.map((control) => (
+            {currentControls.map((control, index) => (
               <tr key={control.id}>
                 <td style={{ border: "1px solid #dee2e6", padding: "10px" }}>
-                  {control.id}
+                  {indexOfFirstControl + index + 1}
                 </td>
                 <td style={{ border: "1px solid #dee2e6", padding: "10px" }}>
                   {control.category}
@@ -225,7 +225,7 @@ const ControlsPage = () => {
           </tbody>
         </table>
 
-        {/* NEW: Improved Pagination controls */}
+        {/* Improved Pagination controls */}
         {totalPages > 1 && (
           <div
             style={{
@@ -366,3 +366,29 @@ const ControlsPage = () => {
 };
 
 export default ControlsPage;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

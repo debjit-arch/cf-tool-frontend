@@ -9,10 +9,12 @@ const controlOptions = Object.keys(CONTROL_MAPPING).map((key) => ({
 }));
 
 const TreatmentPlanForm = ({ formData, handleInputChange }) => {
+  // Scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
+  // Determine action plan by risk level
   const getActionPlan = (riskLevel) => {
     switch (riskLevel) {
       case "Low":
@@ -26,16 +28,11 @@ const TreatmentPlanForm = ({ formData, handleInputChange }) => {
   };
 
   const action = getActionPlan(formData.riskLevel);
-  const statusValue =
-    action === "Accept" ? "Closed" : formData.status || "Active";
 
-  // Auto-close if action = Accept
-  useEffect(() => {
-    if (action === "Accept" && formData.status !== "Closed") {
-      handleInputChange({ target: { name: "status", value: "Closed" } });
-    }
-  }, [formData.riskLevel]);
+  // Determine status, removed autoset logic to allow manual control
+  const statusValue = formData.status || "Active";
 
+  // Styles
   const formStyle = {
     background: "#fff",
     padding: "20px",
@@ -114,15 +111,11 @@ const TreatmentPlanForm = ({ formData, handleInputChange }) => {
         </div>
         <div style={summaryItemStyle}>
           <span style={summaryLabelStyle}>Department</span>
-          <span style={summaryValueStyle}>
-            {formData.department || "Not Set"}
-          </span>
+          <span style={summaryValueStyle}>{formData.department || "Not Set"}</span>
         </div>
         <div style={summaryItemStyle}>
           <span style={summaryLabelStyle}>Risk Type</span>
-          <span style={summaryValueStyle}>
-            {formData.riskType || "Not Set"}
-          </span>
+          <span style={summaryValueStyle}>{formData.riskType || "Not Set"}</span>
         </div>
       </div>
 
@@ -196,7 +189,7 @@ const TreatmentPlanForm = ({ formData, handleInputChange }) => {
                   target: { name: "status", value: selected.value },
                 })
               }
-              isDisabled={action === "Accept"}
+              isDisabled={false} // always enabled for manual selection
             />
           </div>
         </div>
@@ -258,10 +251,7 @@ const TreatmentPlanForm = ({ formData, handleInputChange }) => {
           placeholder="Choose applicable controls"
           isMulti
           name="controlReference"
-          options={Object.keys(CONTROL_MAPPING).map((control) => ({
-            value: control,
-            label: control,
-          }))}
+          options={controlOptions}
           value={(formData.controlReference || []).map((c) => ({
             value: c,
             label: c,

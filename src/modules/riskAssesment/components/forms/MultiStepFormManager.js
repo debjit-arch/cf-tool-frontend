@@ -233,7 +233,7 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
   const getStepLabel = (step) => {
     const labels = [
       "Risk Assessment",
-      "Treatment & Planning",
+      "Treatment Planning",
       "Task Management",
     ];
     return labels[step - 1];

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import InputField from "../inputs/InputField";
 import SelectField from "../inputs/SelectField";
@@ -13,47 +14,15 @@ const RiskDetailsForm = ({
   originalRiskId = "",
   departments = [],
 }) => {
+  // State for Threat & Vulnerabilities
   const [selectedThreat, setSelectedThreat] = useState("");
   const [isCustomThreat, setIsCustomThreat] = useState(false);
+  const [customThreatInput, setCustomThreatInput] = useState("");
+  const [selectedVulnerabilities, setSelectedVulnerabilities] = useState([]);
+  const [showCustomVulInput, setShowCustomVulInput] = useState(false);
   const [customVulnerability, setCustomVulnerability] = useState("");
 
-  
-
-  useEffect(() => {
-    // always reset to top when component loads
-    window.scrollTo(0, 0);
-  }, []);
-  useEffect(() => {
-    if (!formData.riskId && !isEditing) {
-      generateRiskId();
-    }
-  }, [formData.riskId, isEditing, generateRiskId]);
-  useEffect(() => {
-    if (!formData.riskType) {
-      handleInputChange({ target: { name: "riskType", value: "Operational" } });
-    }
-  }, [formData.riskType, handleInputChange]);
-
-  useEffect(() => {
-    if (!formData.date) {
-      const today = new Date().toISOString().split("T")[0]; // format: YYYY-MM-DD
-      handleInputChange({ target: { name: "date", value: today } });
-    }
-  }, [formData.date, handleInputChange]);
-  const riskTypeOptions = [
-    { value: "Operational", label: "Operational" },
-    { value: "Tactical", label: "Tactical" },
-    { value: "Strategic", label: "Strategic" },
-  ];
-
-  const assetTypeOptions = [
-    { value: "Public", label: "Public" },
-    { value: "Private", label: "Private" },
-    { value: "Sensitive", label: "Sensitive" },
-    { value: "Confidential", label: "Confidential" },
-  ];
-
-  // Example threat-vulnerability mapping
+  // Threat-Vulnerability Mapping
   const threatVulnerabilityMapping = {
     "Phishing Attack": {
       vulnerabilities: ["Weak Email Filters", "Lack of User Awareness"],
@@ -72,53 +41,243 @@ const RiskDetailsForm = ({
     },
   };
 
-  const [selectedVulnerabilities, setSelectedVulnerabilities] = useState([]);
+  // Collate All Unique Vulnerabilities
+  const allVulnerabilities = [
+    ...new Set(
+      Object.values(threatVulnerabilityMapping)
+        .flatMap((v) => v.vulnerabilities)
+    ),
+  ];
 
+  // Threat Options - Always show all predefined + Others
+  const threatOptions = [
+    ...Object.keys(threatVulnerabilityMapping).map((t) => ({
+      value: t,
+      label: t,
+    })),
+    { value: "Others", label: "Others" },
+  ];
+
+  // Vulnerability Options Logic - UPDATED
+  let vulOptionsArr = [];
+  if (isCustomThreat) {
+    // Custom threat: show ALL vulnerabilities + Others
+    vulOptionsArr = [
+      ...allVulnerabilities.map((v) => ({ value: v, label: v })),
+      { value: "Others", label: "Others" },
+    ];
+  } else if (
+    selectedThreat &&
+    threatVulnerabilityMapping[selectedThreat]
+  ) {
+    // Standard threat: only those vulnerabilities for the threat + Others
+    vulOptionsArr = [
+      ...threatVulnerabilityMapping[selectedThreat].vulnerabilities.map(
+        (v) => ({ value: v, label: v })
+      ),
+      { value: "Others", label: "Others" },
+    ];
+  } else {
+    // Nothing selected yet
+    vulOptionsArr = [{ value: "Others", label: "Others" }];
+  }
+
+  // Helper function to format list with proper English grammar
+  const formatListWithAnd = (items) => {
+    if (items.length === 0) return "";
+    if (items.length === 1) return items[0];
+    if (items.length === 2) return items.join(" and ");
+    return (
+      items.slice(0, -1).join(", ") + ", and " + items[items.length - 1]
+    );
+  };
+
+  // Threat Selection Handler
+  const handleThreatChange = (option) => {
+    if (!option) {
+      setSelectedThreat("");
+      setIsCustomThreat(false);
+      setCustomThreatInput("");
+      setSelectedVulnerabilities([]);
+      setCustomVulnerability("");
+      setShowCustomVulInput(false);
+      handleInputChange({ target: { name: "threat", value: "" } });
+      handleInputChange({ target: { name: "vulnerability", value: [] } });
+      return;
+    }
+
+    if (option.value === "Others") {
+      setIsCustomThreat(true);
+      setSelectedThreat("");
+      setCustomThreatInput("");
+      setSelectedVulnerabilities([]);
+      setCustomVulnerability("");
+      setShowCustomVulInput(false);
+      handleInputChange({ target: { name: "threat", value: "" } });
+      handleInputChange({ target: { name: "vulnerability", value: [] } });
+    } else {
+      setIsCustomThreat(false);
+      setSelectedThreat(option.value);
+      setCustomThreatInput("");
+      setSelectedVulnerabilities([]);
+      setCustomVulnerability("");
+      setShowCustomVulInput(false);
+      handleInputChange({ target: { name: "threat", value: option.value } });
+      handleInputChange({ target: { name: "vulnerability", value: [] } });
+    }
+  };
+
+  // Vulnerability Selection Handler
+  const handleVulnerabilityChange = (options) => {
+    const vulArr = options ? options.map((o) => o.value) : [];
+
+    // Separate Others from regular vulnerabilities
+    const hasOthers = vulArr.includes("Others");
+    const regularVulnerabilities = vulArr.filter((v) => v !== "Others");
+
+    setSelectedVulnerabilities(regularVulnerabilities);
+    setShowCustomVulInput(hasOthers);
+
+    // Save selected (excluding Others)
+    handleInputChange({
+      target: {
+        name: "vulnerability",
+        value: regularVulnerabilities,
+      },
+    });
+
+    if (!hasOthers) {
+      setCustomVulnerability("");
+    }
+  };
+
+  // Custom Threat Input Handler
+  const handleCustomThreat = (e) => {
+    const val = e.target.value;
+    setCustomThreatInput(val);
+    handleInputChange({ target: { name: "threat", value: val } });
+  };
+
+  // Custom Vulnerability Input Handler
+  const handleCustomVulnerability = (e) => {
+    const val = e.target.value;
+    setCustomVulnerability(val);
+
+    // Parse comma-separated values
+    const customVulArray = val
+      .split(",")
+      .map((s) => s.trim())
+      .filter((v) => v);
+
+    // Combine selected vulnerabilities with custom ones
+    const finalVulArray = [...selectedVulnerabilities, ...customVulArray];
+
+    handleInputChange({
+      target: {
+        name: "vulnerability",
+        value: finalVulArray,
+      },
+    });
+  };
+
+  // Auto-fill Risk Description - UPDATED with better formatting
   useEffect(() => {
-    if (selectedThreat && selectedVulnerabilities.length > 0) {
-      const newDescription = `Risk of loss of information due to ${selectedThreat} because of ${selectedVulnerabilities.join(
-        ", "
-      )}`;
+    let vulArray = [...selectedVulnerabilities];
 
+    if (showCustomVulInput && customVulnerability) {
+      const customVulArray = customVulnerability
+        .split(",")
+        .map((v) => v.trim())
+        .filter((v) => v);
+      vulArray = [...vulArray, ...customVulArray];
+    }
+
+    let threatValue = isCustomThreat ? customThreatInput : selectedThreat;
+    let desc = "";
+
+    if (threatValue) {
+      // Use formatted list with proper English grammar
+      const vulnerabilitiesFormatted = formatListWithAnd(vulArray);
+      desc = `Risk of loss of information due to ${threatValue}${
+        vulnerabilitiesFormatted ? " because of " + vulnerabilitiesFormatted : ""
+      }`;
       handleInputChange({
-        target: { name: "riskDescription", value: newDescription },
+        target: { name: "riskDescription", value: desc },
       });
     }
-  }, [selectedThreat, selectedVulnerabilities]);
 
-  //auto populate
-  const assetCIAValues = {
-    Public: { confidentiality: 1, integrity: 1, availability: 1 },
-    Private: { confidentiality: 2, integrity: 2, availability: 2 },
-    Sensitive: { confidentiality: 3, integrity: 3, availability: 2 },
-    Confidential: { confidentiality: 3, integrity: 3, availability: 3 },
-  };
+    // Always update threat and vulnerability in formData
+    handleInputChange({ target: { name: "threat", value: threatValue } });
+    handleInputChange({
+      target: { name: "vulnerability", value: vulArray },
+    });
+  }, [
+    selectedThreat,
+    customThreatInput,
+    selectedVulnerabilities,
+    customVulnerability,
+    showCustomVulInput,
+    isCustomThreat,
+  ]);
+
+  // ============ ORIGINAL HOOKS ============
+  useEffect(() => {
+    // always reset to top when component loads
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    if (!formData.riskId && !isEditing) {
+      generateRiskId();
+    }
+  }, [formData.riskId, isEditing, generateRiskId]);
+
+  useEffect(() => {
+    if (!formData.riskType) {
+      handleInputChange({ target: { name: "riskType", value: "Operational" } });
+    }
+  }, [formData.riskType, handleInputChange]);
+
+  useEffect(() => {
+    if (!formData.date) {
+      const today = new Date().toISOString().split("T")[0];
+      handleInputChange({ target: { name: "date", value: today } });
+    }
+  }, [formData.date, handleInputChange]);
+
+  // ============ OPTION ARRAYS ============
+  const riskTypeOptions = [
+    { value: "Operational", label: "Operational" },
+    { value: "Tactical", label: "Tactical" },
+    { value: "Strategic", label: "Strategic" },
+  ];
+
+  const assetTypeOptions = [
+    { value: "Public", label: "Public" },
+    { value: "Private", label: "Private" },
+    { value: "Sensitive", label: "Sensitive" },
+    { value: "Confidential", label: "Confidential" },
+  ];
 
   const ciaOptions = [
     { value: 1, label: "1 - Low" },
     { value: 2, label: "2 - Medium" },
     { value: 3, label: "3 - High" },
   ];
-  const liklihoodOptions = [
+
+  const likelihoodOptions = [
     { value: 1, label: "1 - Unlikely" },
     { value: 2, label: "2 - Possible" },
     { value: 3, label: "3 - Likely" },
     { value: 4, label: "4 - Almost Certain" },
   ];
 
-  const calculateAsset = () => {
-    const c = parseInt(formData.confidentiality) || 0;
-    const i = parseInt(formData.integrity) || 0;
-    const a = parseInt(formData.availability) || 0;
-    return c + i + a;
-  };
-
-  const calculateImpact = () => {
-    const c = parseInt(formData.confidentiality) || 0;
-    const i = parseInt(formData.integrity) || 0;
-    const a = parseInt(formData.availability) || 0;
-    formData.impact = Math.max(c, i, a);
-    return Math.max(c, i, a);
+  // ============ ASSET CIA AUTO-POPULATE ============
+  const assetCIAValues = {
+    Public: { confidentiality: 1, integrity: 1, availability: 1 },
+    Private: { confidentiality: 2, integrity: 2, availability: 2 },
+    Sensitive: { confidentiality: 3, integrity: 3, availability: 2 },
+    Confidential: { confidentiality: 3, integrity: 3, availability: 3 },
   };
 
   useEffect(() => {
@@ -135,12 +294,22 @@ const RiskDetailsForm = ({
     }
   }, [formData.assetType]);
 
+  // ============ CALCULATIONS ============
+  const calculateImpact = () => {
+    const c = parseInt(formData.confidentiality) || 0;
+    const i = parseInt(formData.integrity) || 0;
+    const a = parseInt(formData.availability) || 0;
+    return Math.max(c, i, a);
+  };
+
   const calculateRiskLevel = (score) => {
     if (score <= 3) return "Low";
     if (score <= 8) return "Medium";
     if (score <= 12) return "High";
     return "Critical";
-  }; // Auto-save Risk Score & Risk Level into formData
+  };
+
+  // Auto-calculate Risk Score & Risk Level
   useEffect(() => {
     const impact = calculateImpact();
     const probability = parseInt(formData.probability) || 0;
@@ -155,56 +324,56 @@ const RiskDetailsForm = ({
     formData.probability,
   ]);
 
+  // ============ DUPLICATE CHECK ============
   const isDuplicateRiskId = () => {
     if (isEditing && formData.riskId === originalRiskId) {
-      return false; // Not a duplicate if it's the same risk being edited
+      return false;
     }
     return existingRiskIds.includes(formData.riskId);
   };
 
-  // inside RiskDetailsForm
-
+  // ============ STYLES ============
   const formStyle = {
     background: "linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)",
-    padding: "20px", // reduced from 40px
-    borderRadius: "10px", // reduced from 16px
-    boxShadow: "0 4px 15px rgba(0, 0, 0, 0.05)", // lighter
-    maxWidth: "800px", // reduced width
+    padding: "20px",
+    borderRadius: "10px",
+    boxShadow: "0 4px 15px rgba(0, 0, 0, 0.05)",
+    maxWidth: "800px",
     margin: "0 auto",
     border: "1px solid #e9ecef",
   };
 
   const headerStyle = {
     textAlign: "center",
-    marginBottom: "20px", // reduced
-    paddingBottom: "10px", // reduced
-    borderBottom: "2px solid #3498db", // thinner
+    marginBottom: "20px",
+    paddingBottom: "10px",
+    borderBottom: "2px solid #3498db",
   };
 
   const titleStyle = {
     color: "#2c3e50",
-    fontSize: "22px", // reduced from 28px
+    fontSize: "22px",
     fontWeight: "600",
     marginBottom: "4px",
   };
 
   const subtitleStyle = {
     color: "#7f8c8d",
-    fontSize: "13px", // reduced from 16px
+    fontSize: "13px",
     fontWeight: "400",
   };
 
   const gridStyle = {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", // smaller min size
-    gap: "15px", // reduced from 25px
-    marginBottom: "20px", // reduced
+    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+    gap: "15px",
+    marginBottom: "20px",
   };
 
   const riskIdSectionStyle = {
-    background: "rgba(52, 152, 219, 0.03)", // lighter background
-    padding: "15px", // reduced from 25px
-    borderRadius: "8px", // reduced
+    background: "rgba(52, 152, 219, 0.03)",
+    padding: "15px",
+    borderRadius: "8px",
     border: "1px solid rgba(52, 152, 219, 0.1)",
     marginBottom: "20px",
   };
@@ -219,7 +388,7 @@ const RiskDetailsForm = ({
 
   const sectionTitleStyle = {
     color: "#2c3e50",
-    fontSize: "16px", // reduced from 20px
+    fontSize: "16px",
     fontWeight: "600",
     marginBottom: "10px",
   };
@@ -229,7 +398,7 @@ const RiskDetailsForm = ({
     gridTemplateColumns: "repeat(2, 1fr)",
     gap: "12px",
     background: "#f4f6f7",
-    padding: "15px", // reduced
+    padding: "15px",
     borderRadius: "8px",
     marginTop: "15px",
   };
@@ -237,7 +406,7 @@ const RiskDetailsForm = ({
   const calculatedItemStyle = {
     textAlign: "center",
     background: "white",
-    padding: "12px", // reduced
+    padding: "12px",
     borderRadius: "6px",
     boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
   };
@@ -247,18 +416,18 @@ const RiskDetailsForm = ({
     fontWeight: "500",
     color: "#34495e",
     marginBottom: "6px",
-    fontSize: "12px", // reduced
+    fontSize: "12px",
     textTransform: "uppercase",
   };
 
   const calculatedValueStyle = {
-    fontSize: "18px", // reduced from 24px
+    fontSize: "18px",
     fontWeight: "600",
     padding: "4px 8px",
     borderRadius: "6px",
     background: "#ffffff",
     color: "#2c3e50",
-    border: "1px solid #ecf0f1", // thinner
+    border: "1px solid #ecf0f1",
   };
 
   const fullWidthStyle = {
@@ -290,38 +459,28 @@ const RiskDetailsForm = ({
     alignItems: "center",
     marginBottom: "20px",
   };
-  useEffect(() => {
-    if (selectedThreat) {
-      const vulArray = isCustomThreat
-        ? customVulnerability
-            .split(",")
-            .map((v) => v.trim())
-            .filter((v) => v)
-        : selectedVulnerabilities;
 
-      const newDescription = `Risk of loss of information due to ${selectedThreat}${
-        vulArray.length > 0 ? " because of " + vulArray.join(", ") : ""
-      }`;
+  const selectLabelStyle = {
+    display: "block",
+    marginBottom: "8px",
+    fontWeight: "500",
+    color: "#2c3e50",
+    fontSize: "14px",
+  };
 
-      handleInputChange({
-        target: { name: "riskDescription", value: newDescription },
-      });
+  const selectControlStyle = {
+    control: (base) => ({
+      ...base,
+      borderRadius: "6px",
+      borderColor: "#d1d5db",
+      boxShadow: "none",
+      "&:hover": {
+        borderColor: "#3498db",
+      },
+    }),
+  };
 
-      // Always update formData with current threat & vulnerabilities
-      handleInputChange({
-        target: { name: "threat", value: selectedThreat },
-      });
-      handleInputChange({
-        target: { name: "vulnerability", value: vulArray },
-      });
-    }
-  }, [
-    selectedThreat,
-    selectedVulnerabilities,
-    customVulnerability,
-    isCustomThreat,
-  ]);
-
+  // Responsive CSS
   const responsiveStyle = `
     @media (max-width: 768px) {
       .risk-form {
@@ -351,13 +510,18 @@ const RiskDetailsForm = ({
       .risk-form {
         padding: 20px 15px !important;
       }
+      .form-title {
+        font-size: 20px !important;
+      }
     }
   `;
 
+  // ============ RENDER ============
   return (
     <>
       <style>{responsiveStyle}</style>
       <div style={formStyle} className="risk-form">
+        {/* Header */}
         <div style={headerStyle}>
           <h2 style={titleStyle} className="form-title">
             📋 Risk Assessment
@@ -456,118 +620,80 @@ const RiskDetailsForm = ({
               placeholder="Enter the asset"
               required
             />
-            <div style={sectionStyle}>
-              <h3 style={sectionTitleStyle}>⚠️ Threat & Vulnerabilities</h3>
-              <div style={gridStyle} className="risk-grid">
-                {/* Threat Selection */}
-                <Select
-                  value={
-                    selectedThreat
-                      ? { value: selectedThreat, label: selectedThreat }
-                      : null
-                  }
-                  onChange={(option) => {
-                    if (!option) return;
-                    const value = option.value;
-                    if (value === "Others") {
-                      setIsCustomThreat(true);
-                      setSelectedThreat("");
-                      handleInputChange({
-                        target: { name: "threat", value: "" },
-                      });
-                    } else {
-                      setIsCustomThreat(false);
-                      setSelectedThreat(value);
-                      handleInputChange({ target: { name: "threat", value } });
-                    }
-                    setSelectedVulnerabilities([]);
-                  }}
-                  options={[
-                    ...Object.keys(threatVulnerabilityMapping).map(
-                      (threat) => ({
-                        value: threat,
-                        label: threat,
-                      })
-                    ),
-                    { value: "Others", label: "Others" },
-                  ]}
-                  placeholder="Select Threat"
-                  isClearable
-                />
-
-                {/* Custom Threat Input */}
-                {isCustomThreat && (
-                  <InputField
-                    label="Threat (Custom)"
-                    name="threat"
-                    value={selectedThreat}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setSelectedThreat(value);
-                      handleInputChange({ target: { name: "threat", value } });
-                    }}
-                    placeholder="Enter custom threat"
-                    required
-                  />
-                )}
-
-                {/* Vulnerabilities */}
-                {!isCustomThreat ? (
-                  <Select
-                    value={selectedVulnerabilities.map((v) => ({
-                      value: v,
-                      label: v,
-                    }))}
-                    onChange={(options) => {
-                      const vulArray = options
-                        ? options.map((opt) => opt.value)
-                        : [];
-                      setSelectedVulnerabilities(vulArray);
-                      handleInputChange({
-                        target: { name: "vulnerability", value: vulArray },
-                      });
-                    }}
-                    options={
-                      selectedThreat &&
-                      threatVulnerabilityMapping[selectedThreat]
-                        ? threatVulnerabilityMapping[
-                            selectedThreat
-                          ].vulnerabilities.map((vul) => ({
-                            value: vul,
-                            label: vul,
-                          }))
-                        : []
-                    }
-                    placeholder="Select Vulnerabilities"
-                    isMulti
-                    isClearable
-                  />
-                ) : (
-                  <InputField
-                    label="Vulnerabilities (Custom, comma-separated)"
-                    name="vulnerabilities"
-                    value={customVulnerability}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setCustomVulnerability(value);
-                      const vulArray = value
-                        .split(",")
-                        .map((v) => v.trim())
-                        .filter((v) => v);
-                      setSelectedVulnerabilities(vulArray);
-                      handleInputChange({
-                        target: { name: "vulnerability", value: vulArray },
-                      });
-                    }}
-                    placeholder="Enter custom vulnerabilities separated by commas"
-                    required
-                  />
-                )}
-              </div>
-            </div>
           </div>
         </div>
 
+        {/* Threat & Vulnerabilities Section */}
+        <div style={sectionStyle}>
+          <h3 style={sectionTitleStyle}>⚠️ Threat & Vulnerabilities</h3>
+          <div style={gridStyle} className="risk-grid">
+            {/* Threat Dropdown */}
+            <div>
+              <label style={selectLabelStyle}>Threat</label>
+              <Select
+                value={
+                  isCustomThreat
+                    ? { value: "Others", label: "Others" }
+                    : selectedThreat
+                    ? { value: selectedThreat, label: selectedThreat }
+                    : null
+                }
+                onChange={handleThreatChange}
+                options={threatOptions}
+                placeholder="Select Threat"
+                isClearable
+                styles={selectControlStyle}
+              />
+            </div>
+
+            {/* Custom Threat Input */}
+            {isCustomThreat && (
+              <InputField
+                label="Threat (Custom)"
+                name="threat"
+                value={customThreatInput}
+                onChange={handleCustomThreat}
+                placeholder="Enter custom threat"
+                required
+              />
+            )}
+
+            {/* Vulnerabilities Dropdown */}
+            <div>
+              <label style={selectLabelStyle}>Vulnerabilities</label>
+              <Select
+                value={[
+                  ...selectedVulnerabilities.map((v) => ({
+                    value: v,
+                    label: v,
+                  })),
+                  ...(showCustomVulInput
+                    ? [{ value: "Others", label: "Others" }]
+                    : []),
+                ]}
+                onChange={handleVulnerabilityChange}
+                options={vulOptionsArr}
+                placeholder="Select Vulnerabilities"
+                isMulti
+                isClearable
+                styles={selectControlStyle}
+              />
+            </div>
+
+            {/* Custom Vulnerability Input */}
+            {showCustomVulInput && (
+              <InputField
+                label="Vulnerabilities (Custom, comma-separated)"
+                name="customVulnerability"
+                value={customVulnerability}
+                onChange={handleCustomVulnerability}
+                placeholder="Enter custom vulnerabilities separated by commas"
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Risk Description */}
         <div style={fullWidthStyle}>
           <TextAreaField
             label="Risk Description"
@@ -580,16 +706,18 @@ const RiskDetailsForm = ({
           />
         </div>
 
+        {/* Likelihood */}
         <SelectField
           label="Likelihood"
           name="probability"
           value={formData.probability || ""}
           onChange={handleInputChange}
-          options={liklihoodOptions}
+          options={likelihoodOptions}
           placeholder="Select probability level"
           required
         />
 
+        {/* Calculated Fields */}
         <div style={calculatedFieldsStyle} className="calculated-fields">
           <div style={calculatedItemStyle}>
             <label style={calculatedLabelStyle}>Impact Score</label>
@@ -645,6 +773,7 @@ const RiskDetailsForm = ({
           </div>
         </div>
 
+        {/* Existing Controls */}
         <div style={fullWidthStyle}>
           <TextAreaField
             label="Existing Controls"
@@ -655,6 +784,42 @@ const RiskDetailsForm = ({
             rows={3}
           />
         </div>
+
+        {/* CIA Section
+        <div style={sectionStyle}>
+          <h3 style={sectionTitleStyle}>🔐 Confidentiality, Integrity & Availability</h3>
+          <div style={gridStyle} className="cia-grid">
+            <SelectField
+              label="Confidentiality"
+              name="confidentiality"
+              value={formData.confidentiality || ""}
+              onChange={handleInputChange}
+              options={ciaOptions}
+              placeholder="Select Confidentiality Level"
+              required
+            />
+
+            <SelectField
+              label="Integrity"
+              name="integrity"
+              value={formData.integrity || ""}
+              onChange={handleInputChange}
+              options={ciaOptions}
+              placeholder="Select Integrity Level"
+              required
+            />
+
+            <SelectField
+              label="Availability"
+              name="availability"
+              value={formData.availability || ""}
+              onChange={handleInputChange}
+              options={ciaOptions}
+              placeholder="Select Availability Level"
+              required
+            />
+          </div>
+        </div> */}
       </div>
     </>
   );

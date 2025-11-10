@@ -159,8 +159,26 @@ const HamburgerMenu = () => {
             &times;
           </button>
         </div>
+   
 
-        <div style={{ padding: "20px 0", flexGrow: 1 }}>
+
+       
+          {/* HOME OPTION */}
+          <div
+            style={menuItemStyle}
+            onClick={() => handleNavigation("/")}
+            onMouseEnter={(e) => (e.target.style.backgroundColor = "#f8f9fa")}
+            onMouseLeave={(e) =>
+              (e.target.style.backgroundColor = "transparent")
+            }
+          >
+            🏠 Home
+          </div>
+
+
+
+
+        <div style={{ padding: "5px 0", flexGrow: 1 }}>
           <div
             style={menuItemStyle}
             onClick={() => handleNavigation("/risk-assessment/")}
