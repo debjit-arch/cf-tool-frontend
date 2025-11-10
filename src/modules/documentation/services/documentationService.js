@@ -82,13 +82,23 @@ const documentationService = {
    * @param {string} soaId - optional SoA id
    * @param {string} controlId - optional Control id
    */
-  async uploadDocument({ file, soaId, controlId }) {
+  async uploadDocument({
+    file,
+    soaId,
+    controlId,
+    uploaderName,
+    departmentName,
+  }) {
     if (!file) throw new Error("File is required");
 
     const formData = new FormData();
     formData.append("file", file); // must match multer.single("file")
     if (soaId) formData.append("soaId", soaId);
     if (controlId) formData.append("controlId", controlId);
+
+    // ✅ Add uploader info
+    if (uploaderName) formData.append("uploaderName", uploaderName);
+    if (departmentName) formData.append("departmentName", departmentName);
 
     // Use axios to send multipart/form-data
     const res = await axios.post(`${API_BASE}/documents/upload`, formData, {

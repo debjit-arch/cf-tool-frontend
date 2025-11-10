@@ -31,26 +31,19 @@ const MLD = () => {
   const [docSearch, setDocSearch] = useState("");
   const [docSort, setDocSort] = useState("date_newest"); // date_newest | date_oldest | name
 
-
-
-
-
-
- const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
-
-  
-
-
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const docs = (await documentationService.getDocuments()) || [];
         setDocuments(docs || []);
+        console.log("📄 Documents fetched from API:", docs);
 
         const soaList = (await documentationService.getSoAEntries()) || [];
         setSoas(Array.isArray(soaList) ? soaList : []);
+        console.log("📘 SoA entries fetched:", soaList);
 
         // compute counts per soa
         const counts = {};
@@ -72,14 +65,7 @@ const MLD = () => {
     fetchData();
   }, []);
 
-
-
-
-
-
-
-
-// Modified preview click handler to open modal with iframe
+  // Modified preview click handler to open modal with iframe
   const handlePreviewClick = (soa) => {
     const doc = documents.find((d) => String(d.soaId) === String(soa.id));
     if (doc) {
@@ -98,13 +84,6 @@ const MLD = () => {
     setPreviewModalOpen(false);
     setPreviewUrl("");
   };
-
-
-
-
-
-
-
 
   // keep original behavior: accept FileList or single File
   const handleFileChange = (soaId, fileOrFiles) => {
@@ -131,59 +110,6 @@ const MLD = () => {
     }
   };
 
-  const handleUpload = async (refId) => {
-    const file = selectedFiles[refId];
-    if (!file) {
-      alert("Please select a file for this Document Reference");
-      return;
-    }
-
-    try {
-      // ⏳ Mark this SoA as uploading
-      setUploading((prev) => ({ ...prev, [refId]: true }));
-
-      const uploadedDoc = await documentationService.uploadDocument({
-        file,
-        soaId: refId,
-        controlId: "",
-      });
-
-      try {
-        const docId = uploadedDoc?.id ?? uploadedDoc?._id ?? null;
-        if (docId) {
-          await gapService.createGap(docId, { status: "Open" });
-          console.log("Gap entry created for docId:", docId);
-        } else {
-          console.warn("No document ID returned from upload, gap not created.");
-        }
-      } catch (gapErr) {
-        console.error("Failed to create gap entry:", gapErr);
-      }
-
-      alert("Document uploaded successfully");
-
-      setHasUploaded((prev) => ({ ...prev, [refId]: true }));
-      setSelectedFiles((prev) => ({ ...prev, [refId]: null }));
-
-      const docs = (await documentationService.getDocuments()) || [];
-      setDocuments(docs || []);
-
-      const counts = {};
-      (soas || []).forEach((s) => (counts[s.id] = 0));
-      (docs || []).forEach((d) => {
-        const sid = d.soaId ?? d.soa?.id ?? d.soaIdString ?? null;
-        if (sid != null) counts[sid] = (counts[sid] ?? 0) + 1;
-      });
-      setUploadedCounts(counts);
-    } catch (error) {
-      console.error("Upload failed:", error);
-      alert("Error uploading document");
-    } finally {
-      // ✅ Stop spinner
-      setUploading((prev) => ({ ...prev, [refId]: false }));
-    }
-  };
-
   // NEW: single-button upload that opens file picker and auto-uploads
   const handleSingleButtonUpload = async (soaId) => {
     const input = document.createElement("input");
@@ -200,6 +126,8 @@ const MLD = () => {
           file,
           soaId,
           controlId: "",
+          uploaderName: user?.name ?? "Unknown",
+          departmentName: user?.department?.name ?? "N/A",
         });
 
         try {
@@ -208,7 +136,9 @@ const MLD = () => {
             await gapService.createGap(docId, { status: "Open" });
             console.log("Gap entry created for docId:", docId);
           } else {
-            console.warn("No document ID returned from upload, gap not created.");
+            console.warn(
+              "No document ID returned from upload, gap not created."
+            );
           }
         } catch (gapErr) {
           console.error("Failed to create gap entry:", gapErr);
@@ -237,7 +167,8 @@ const MLD = () => {
   };
 
   const handleDelete = async (docId) => {
-    if (!window.confirm("Are you sure you want to delete this document?")) return;
+    if (!window.confirm("Are you sure you want to delete this document?"))
+      return;
     try {
       await documentationService.deleteDocument(docId);
       const updatedDocs = documents.filter(
@@ -751,13 +682,21 @@ const MLD = () => {
                   const count = getUploadedCount(soaId);
                   const hasUploaded = count > 0;
                   const selected = selectedFiles[soaId];
+                  const doc = documents.find(
+                    (d) => String(d.soaId) === String(soa.id)
+                  );
+                  console.log("🔎 Row debug:", { soaId: soa.id, soa, doc });
+
                   // You'll want to derive or fetch approval dates from your soa object or documents
                   // Here using placeholders: soa.approvalDate, soa.nextApprovalDate, adjust if your data differs
                   const approvalDate = soa.approvalDate ?? "—";
                   const nextApprovalDate = soa.nextApprovalDate ?? "—";
 
                   return (
-                    <tr key={soaId} style={{ borderBottom: "1px solid #f1f1f1" }}>
+                    <tr
+                      key={soaId}
+                      style={{ borderBottom: "1px solid #f1f1f1" }}
+                    >
                       <td
                         style={{
                           padding: "12px 14px",
@@ -785,72 +724,66 @@ const MLD = () => {
                           : soa.documentRef}
                       </td>
 
-
-
- {previewModalOpen && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            height: "100vh",
-            width: "100vw",
-            backgroundColor: "",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 10,
-          }}
-          onClick={closePreviewModal} // Close modal on backdrop click
-        >
-          <div
-            style={{
-              position: "relative",
-              width: "62vw",
-              height: "100vh",
-              backgroundColor: "white",
-              borderRadius: "8px",
-              boxShadow: "0 5px 15px rgba(0,0,0,0.3)",
-            }}
-            onClick={(e) => e.stopPropagation()} // prevent modal close when clicking inside modal content
-          >
-            <button
-              onClick={closePreviewModal}
-              style={{
-                position: "absolute",
-                top: 10,
-                right: 10,
-                border: "none",
-                background: "none",
-                fontSize: "24px",
-                fontWeight: "bold",
-                cursor: "pointer",
-                color: "#333",
-                zIndex: 10,
-              }}
-              aria-label="Close preview"
-              title="Close preview"
-            >
-              &times;
-            </button>
-            <iframe
-              src={previewUrl}
-              title="Document Preview"
-              style={{
-                width: "100%",
-                height: "100%",
-                border: "none",
-                borderRadius: "8px",
-              }}
-              // allowFullScreen
-            />
-          </div>
-        </div>
-      )}
-
-
-
-
+                      {previewModalOpen && (
+                        <div
+                          style={{
+                            position: "fixed",
+                            top: 0,
+                            left: 0,
+                            height: "100vh",
+                            width: "100vw",
+                            backgroundColor: "",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            zIndex: 10,
+                          }}
+                          onClick={closePreviewModal} // Close modal on backdrop click
+                        >
+                          <div
+                            style={{
+                              position: "relative",
+                              width: "62vw",
+                              height: "100vh",
+                              backgroundColor: "white",
+                              borderRadius: "8px",
+                              boxShadow: "0 5px 15px rgba(0,0,0,0.3)",
+                            }}
+                            onClick={(e) => e.stopPropagation()} // prevent modal close when clicking inside modal content
+                          >
+                            <button
+                              onClick={closePreviewModal}
+                              aria-label="Close preview"
+                              style={{
+                                position: "absolute",
+                                top: 10,
+                                right: 10,
+                                border: "none",
+                                background: "none",
+                                fontSize: "24px",
+                                fontWeight: "bold",
+                                cursor: "pointer",
+                                color: "#333",
+                                zIndex: 10,
+                              }}
+                              title="Close preview"
+                            >
+                              &times;
+                            </button>
+                            <iframe
+                              src={previewUrl}
+                              title="Document Preview"
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                border: "none",
+                                borderRadius: "8px",
+                              }}
+                              // allowFullScreen
+                            />
+                          </div>
+                        </div>
+                      )}
 
                       <td
                         style={{
@@ -861,7 +794,7 @@ const MLD = () => {
                           fontWeight: "600",
                         }}
                       >
-                        {hasUploaded ? user?.department?.name ?? "N/A" : "—"}
+                        {hasUploaded ? doc?.departmentName ?? "—" : "—"}
                       </td>
 
                       <td
@@ -873,7 +806,7 @@ const MLD = () => {
                           fontWeight: "600",
                         }}
                       >
-                        {hasUploaded ? user?.name ?? "N/A" : "—"}
+                        {hasUploaded ? doc?.uploaderName ?? "—" : "—"}
                       </td>
 
                       <td
