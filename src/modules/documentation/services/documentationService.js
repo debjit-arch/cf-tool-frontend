@@ -109,6 +109,13 @@ const documentationService = {
 
     return res.data;
   },
+  updateApprovalDate(docId, approvalDate) {
+    return request(`${API_BASE}/documents/${docId}/approval`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ approvalDate }),
+    });
+  },
   /**
    * Delete a document by ID
    * @param {string|number} id - Document ID

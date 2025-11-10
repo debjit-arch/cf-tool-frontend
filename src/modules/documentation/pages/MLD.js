@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useHistory } from "react-router-dom";
 import documentationService from "../services/documentationService";
 import gapService from "../../gapAssessment/services/gapService";
+import { Trash2, UploadCloud, Calendar } from "lucide-react";
 
 const MLD = () => {
   const history = useHistory();
@@ -681,22 +682,47 @@ const MLD = () => {
                   const soaId = soa.id;
                   const count = getUploadedCount(soaId);
                   const hasUploaded = count > 0;
-                  const selected = selectedFiles[soaId];
                   const doc = documents.find(
                     (d) => String(d.soaId) === String(soa.id)
                   );
-                  console.log("🔎 Row debug:", { soaId: soa.id, soa, doc });
 
-                  // You'll want to derive or fetch approval dates from your soa object or documents
-                  // Here using placeholders: soa.approvalDate, soa.nextApprovalDate, adjust if your data differs
-                  const approvalDate = soa.approvalDate ?? "—";
-                  const nextApprovalDate = soa.nextApprovalDate ?? "—";
+                  const approvalDate = doc?.approvalDate
+                    ? new Date(doc.approvalDate).toISOString().split("T")[0]
+                    : "—";
+                  const nextApprovalDate = doc?.nextApprovalDate
+                    ? new Date(doc.nextApprovalDate).toISOString().split("T")[0]
+                    : "—";
+
+                  const handleApprove = async () => {
+                    if (!doc) return;
+
+                    const today = new Date();
+                    const nextDate = new Date();
+                    nextDate.setDate(today.getDate() + 365);
+
+                    try {
+                      const updatedDoc =
+                        await documentationService.updateApprovalDate(
+                          doc.id,
+                          today.toISOString(),
+                          nextDate.toISOString()
+                        );
+                      setDocuments((prevDocs) =>
+                        prevDocs.map((d) => (d.id === doc.id ? updatedDoc : d))
+                      );
+                      alert("Document approved!");
+                    } catch (err) {
+                      console.error(err);
+                      alert("Failed to approve document");
+                    }
+                  };
 
                   return (
                     <tr
                       key={soaId}
                       style={{ borderBottom: "1px solid #f1f1f1" }}
                     >
+                      {/* Row Index */}
                       <td
                         style={{
                           padding: "12px 14px",
@@ -709,6 +735,8 @@ const MLD = () => {
                       >
                         {idx + 1}
                       </td>
+
+                      {/* Document Name */}
                       <td
                         style={{
                           padding: "12px 14px",
@@ -721,70 +749,10 @@ const MLD = () => {
                       >
                         {Array.isArray(soa.documentRef)
                           ? soa.documentRef.join(", ")
-                          : soa.documentRef}
+                          : soa.documentRef ?? "—"}
                       </td>
 
-                      {previewModalOpen && (
-                        <div
-                          style={{
-                            position: "fixed",
-                            top: 0,
-                            left: 0,
-                            height: "100vh",
-                            width: "100vw",
-                            backgroundColor: "",
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            zIndex: 10,
-                          }}
-                          onClick={closePreviewModal} // Close modal on backdrop click
-                        >
-                          <div
-                            style={{
-                              position: "relative",
-                              width: "62vw",
-                              height: "100vh",
-                              backgroundColor: "white",
-                              borderRadius: "8px",
-                              boxShadow: "0 5px 15px rgba(0,0,0,0.3)",
-                            }}
-                            onClick={(e) => e.stopPropagation()} // prevent modal close when clicking inside modal content
-                          >
-                            <button
-                              onClick={closePreviewModal}
-                              aria-label="Close preview"
-                              style={{
-                                position: "absolute",
-                                top: 10,
-                                right: 10,
-                                border: "none",
-                                background: "none",
-                                fontSize: "24px",
-                                fontWeight: "bold",
-                                cursor: "pointer",
-                                color: "#333",
-                                zIndex: 10,
-                              }}
-                              title="Close preview"
-                            >
-                              &times;
-                            </button>
-                            <iframe
-                              src={previewUrl}
-                              title="Document Preview"
-                              style={{
-                                width: "100%",
-                                height: "100%",
-                                border: "none",
-                                borderRadius: "8px",
-                              }}
-                              // allowFullScreen
-                            />
-                          </div>
-                        </div>
-                      )}
-
+                      {/* Dept Name */}
                       <td
                         style={{
                           padding: "12px 14px",
@@ -797,6 +765,7 @@ const MLD = () => {
                         {hasUploaded ? doc?.departmentName ?? "—" : "—"}
                       </td>
 
+                      {/* Own Name */}
                       <td
                         style={{
                           padding: "12px 14px",
@@ -809,30 +778,70 @@ const MLD = () => {
                         {hasUploaded ? doc?.uploaderName ?? "—" : "—"}
                       </td>
 
+                      {/* Approval Date */}
                       <td
                         style={{
                           padding: "12px 14px",
                           verticalAlign: "middle",
                           textAlign: "center",
-                          color: hasUploaded ? "#2c3e50" : "#aaaaaa",
                           fontWeight: "600",
                         }}
                       >
                         {hasUploaded ? approvalDate : "—"}
                       </td>
 
+                      {/* Next Approval Date */}
                       <td
                         style={{
                           padding: "12px 14px",
                           verticalAlign: "middle",
                           textAlign: "center",
-                          color: hasUploaded ? "#2c3e50" : "#aaaaaa",
                           fontWeight: "600",
+                          color: hasUploaded ? "#2c3e50" : "#aaaaaa",
                         }}
                       >
                         {hasUploaded ? nextApprovalDate : "—"}
                       </td>
+                      {/* Upload File */}
+                      <td
+                        style={{
+                          padding: "12px 14px",
+                          textAlign: "center",
+                          verticalAlign: "middle",
+                        }}
+                      >
+                        <button
+                          onClick={() => handleSingleButtonUpload(soa.id)}
+                          disabled={uploading[soa.id]}
+                          style={{
+                            padding: "6px 12px",
+                            borderRadius: "6px",
+                            border: "none",
+                            background: "#3498db",
+                            color: "white",
+                            cursor: uploading[soa.id]
+                              ? "not-allowed"
+                              : "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "6px",
+                            fontWeight: 600,
+                            minWidth: "80px",
+                          }}
+                          title="Upload document"
+                        >
+                          {uploading[soa.id] ? (
+                            "Uploading..."
+                          ) : (
+                            <>
+                              <UploadCloud size={16} /> Upload
+                            </>
+                          )}
+                        </button>
+                      </td>
 
+                      {/* Approve Button */}
                       <td
                         style={{
                           padding: "12px 14px",
@@ -841,76 +850,48 @@ const MLD = () => {
                         }}
                       >
                         {hasUploaded ? (
-                          <span style={{ color: "#27ae60", fontWeight: "600" }}>
-                            ✅
-                          </span>
-                        ) : (
-                          <div
-                            className="soa-upload-row"
+                          <button
+                            onClick={handleApprove}
                             style={{
+                              padding: "6px 12px",
+                              borderRadius: "6px",
+                              border: "none",
+                              background: "#27ae60",
+                              color: "white",
+                              cursor: "pointer",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              gap: "12px",
+                              gap: "6px",
+                              fontWeight: 600,
                             }}
+                            title="Approve document"
                           >
-                            <button
-                              onClick={() => handleSingleButtonUpload(soa.id)}
-                              disabled={uploading[soa.id]}
-                              style={{
-                                padding: "3px 14px",
-                                borderRadius: "8px",
-                                background: uploading[soa.id]
-                                  ? "#95a5a6"
-                                  : "#3498db",
-                                color: "#fff",
-                                border: "none",
-                                cursor: uploading[soa.id]
-                                  ? "not-allowed"
-                                  : "pointer",
-                                minWidth: 60,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                gap: "8px",
-                                fontWeight: 700,
-                              }}
-                              title={
-                                uploading[soa.id]
-                                  ? "Uploading..."
-                                  : selectedFiles[soa.id]
-                                  ? `${selectedFiles[soa.id].name} selected`
-                                  : "Select file to upload"
-                              }
-                            >
-                              {uploading[soa.id] ? (
-                                <>
-                                  <span
-                                    className="spinner"
-                                    style={{
-                                      width: "16px",
-                                      height: "16px",
-                                      border: "2px solid #fff",
-                                      borderTop: "2px solid transparent",
-                                      borderRadius: "50%",
-                                      animation: "spin 1s linear infinite",
-                                    }}
-                                  />
-                                  Uploading...
-                                </>
-                              ) : (
-                                "📤 "
-                              )}
-                            </button>
-                          </div>
+                            <Calendar size={16} /> Approve
+                          </button>
+                        ) : (
+                          "—"
                         )}
                       </td>
+
+                      {/* Actions */}
                       <td
                         style={{ textAlign: "center", verticalAlign: "middle" }}
                       >
                         {hasUploaded ? (
-                          <button onClick={() => handleDeleteForSoA(soa.id)}>
-                            🗑️
+                          <button
+                            onClick={() => handleDeleteForSoA(soa.id)}
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: "6px",
+                              border: "none",
+                              background: "#e74c3c",
+                              color: "white",
+                              cursor: "pointer",
+                            }}
+                            title="Delete document"
+                          >
+                            <Trash2 size={16} />
                           </button>
                         ) : (
                           "—"
@@ -1007,6 +988,59 @@ const MLD = () => {
           🚀 Go to Gap Assessment
         </button>
       </div>
+      {previewModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(0,0,0,0.6)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 9999,
+          }}
+          onClick={closePreviewModal} // close modal when background clicked
+        >
+          <div
+            style={{
+              position: "relative",
+              width: "80%",
+              height: "80%",
+              background: "#fff",
+              borderRadius: "12px",
+              overflow: "hidden",
+            }}
+            onClick={(e) => e.stopPropagation()} // prevent closing when iframe clicked
+          >
+            <button
+              onClick={closePreviewModal}
+              style={{
+                position: "absolute",
+                top: 10,
+                right: 10,
+                zIndex: 10,
+                padding: "6px 10px",
+                border: "none",
+                borderRadius: "6px",
+                background: "#e74c3c",
+                color: "white",
+                cursor: "pointer",
+              }}
+            >
+              Close
+            </button>
+
+            <iframe
+              src={previewUrl}
+              style={{ width: "100%", height: "100%", border: "none" }}
+              title="Document Preview"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
