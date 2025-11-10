@@ -693,39 +693,6 @@ const RiskAssessment = () => {
             High Risk
           </p>
         </div>
-        {/* Open Risks */}
-        <div style={{ ...statCardStyle, borderLeft: "3px solid #2980b9" }}>
-          <h2 style={{ color: "#2980b9", fontSize: "28px" }}>
-            {riskStats.open}
-          </h2>
-          <p
-            style={{
-              color: "#7f8c8d",
-              fontSize: "13px",
-              fontWeight: "600",
-              margin: 0,
-            }}
-          >
-            Open Risks
-          </p>
-        </div>
-
-        {/* Closed Risks */}
-        <div style={{ ...statCardStyle, borderLeft: "3px solid #27ae60" }}>
-          <h2 style={{ color: "#27ae60", fontSize: "28px" }}>
-            {riskStats.closed}
-          </h2>
-          <p
-            style={{
-              color: "#7f8c8d",
-              fontSize: "13px",
-              fontWeight: "600",
-              margin: 0,
-            }}
-          >
-            Closed Risks
-          </p>
-        </div>
       </div>
 
       {/* Quick Actions */}
