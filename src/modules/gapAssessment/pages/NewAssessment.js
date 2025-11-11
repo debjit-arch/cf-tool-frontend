@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { ISO_27001_CLAUSES, ISO_27001_CONTROL } from "../constant";
-import { Upload, Eye, X } from "lucide-react";
+import {
+  Upload,
+  Eye,
+  X,
+  FileText,
+  ClipboardCheck,
+  ShieldCheck,
+} from "lucide-react";
 import gapService from "../services/gapService";
 
 const NewAssessment = () => {
@@ -9,59 +16,49 @@ const NewAssessment = () => {
   const [user, setUser] = useState(null);
   const [userRole, setUserRole] = useState("employee");
 
-  // Load logged-in user from sessionStorage
+  // Load logged-in user
   useEffect(() => {
     const rawUser = sessionStorage.getItem("user");
     if (rawUser) {
       const parsedUser = JSON.parse(rawUser);
-      console.log("Loaded user:", parsedUser); // ✅ check user
       setUser(parsedUser);
       setUserRole(parsedUser.role || "employee");
     }
   }, []);
 
+  // Build rows from constants filtered by department
   useEffect(() => {
     if (!user) return;
-
-    const combinedClauses = [...ISO_27001_CLAUSES, ...ISO_27001_CONTROL];
-    console.log("Combined Clauses:", combinedClauses); // ✅ check constants
-
-    const filteredRows = combinedClauses
+    const combined = [...ISO_27001_CLAUSES, ...ISO_27001_CONTROL];
+    const filtered = combined
       .flatMap((item) =>
-        item.auditQuestions.map((question) => {
-          return {
-            clause: item.clause,
-            standardRequirement: item.standardRequirement,
-            question:
-              typeof question === "string"
-                ? question
-                : question.text || question,
-            departments: Array.isArray(item.departments)
-              ? item.departments.map((d) =>
-                  typeof d === "string" ? d : d.name
-                )
-              : [],
-            documentEvidence: null,
-            practiceEvidence: "",
-            docScore: "",
-            practiceScore: "",
-            docRemarks: "",
-            practiceRemarks: "",
-            gapId: null,
-          };
-        })
+        item.auditQuestions.map((q) => ({
+          clause: item.clause,
+          standardRequirement: item.standardRequirement,
+          question: typeof q === "string" ? q : q.text || q,
+          departments:
+            item.departments?.map((d) =>
+              typeof d === "string" ? d : d.name
+            ) || [],
+          documentEvidence: null,
+          practiceEvidence: null,
+          practiceEvidenceText: "",
+          docScore: "",
+          practiceScore: "",
+          docRemarks: "",
+          practiceRemarks: "",
+          gapId: null,
+        }))
       )
-      .filter((row) => {
-        // If user has no department (auditor), include all rows
-        if (!user.department || !user.department.name) return true;
-        return row.departments.includes(user.department.name);
-      });
-
-    console.log("Filtered Rows:", filteredRows); // ✅ check final rows
-    setRows(filteredRows);
+      .filter((row) =>
+        !user.department?.name
+          ? true
+          : row.departments.includes(user.department.name)
+      );
+    setRows(filtered);
   }, [user]);
 
-  // Fetch existing gap entries from DB
+  // Fetch gaps from backend
   useEffect(() => {
     const fetchGaps = async () => {
       try {
@@ -71,19 +68,19 @@ const NewAssessment = () => {
             const gap = gaps.find(
               (g) => g.clause === row.clause && g.question === row.question
             );
-            if (gap) {
-              return {
-                ...row,
-                documentEvidence: gap.documentURL || null,
-                practiceEvidence: gap.practiceEvidence || "",
-                docScore: gap.docScore || "",
-                practiceScore: gap.practiceScore || "",
-                docRemarks: gap.docRemarks || "",
-                practiceRemarks: gap.practiceRemarks || "",
-                gapId: gap._id,
-              };
-            }
-            return row;
+            return gap
+              ? {
+                  ...row,
+                  documentEvidence: gap.documentURL || null,
+                  practiceEvidence: gap.practiceEvidence || null,
+                  practiceEvidenceText: gap.practiceEvidenceText || "",
+                  docScore: gap.docScore || "",
+                  practiceScore: gap.practiceScore || "",
+                  docRemarks: gap.docRemarks || "",
+                  practiceRemarks: gap.practiceRemarks || "",
+                  gapId: gap._id,
+                }
+              : row;
           })
         );
       } catch (err) {
@@ -93,189 +90,266 @@ const NewAssessment = () => {
     fetchGaps();
   }, []);
 
-  // Handle local input change
-  const handleInputChange = (index, field, value) => {
-    const updated = [...rows];
-    updated[index][field] = value;
-    setRows(updated);
+  // Generic input handler
+  const handleInputChange = (i, field, value) => {
+    setRows((prev) => {
+      const updated = [...prev];
+      updated[i][field] = value;
+      return updated;
+    });
   };
 
-  // Upload document and save entry
-  const handleFileChange = async (index, file) => {
+  // Document upload
+  const handleFileChange = async (i, file) => {
     if (!file) return;
     try {
       const url = await gapService.uploadFile(file);
-
-      let updatedRow;
       setRows((prev) => {
         const updated = [...prev];
-        updated[index] = { ...updated[index], documentEvidence: url };
-        updatedRow = updated[index];
+        updated[i].documentEvidence = url;
         return updated;
       });
-
-      const entry = {
-        clause: updatedRow.clause,
-        standardRequirement: updatedRow.standardRequirement,
-        question: updatedRow.question,
+      const saved = await gapService.saveEntry({
+        ...rows[i],
         documentURL: url,
-        practiceEvidence: updatedRow.practiceEvidence || "",
         createdBy: user?.id,
-      };
-
-      const saved = await gapService.saveEntry(entry);
-
-      setRows((prev) => {
-        const updated = [...prev];
-        updated[index] = { ...updated[index], gapId: saved._id };
-        return updated;
       });
-    } catch (err) {
-      console.error("File upload/save failed:", err);
-      alert("File upload failed");
+      handleInputChange(i, "gapId", saved._id);
+    } catch {
+      alert("Upload failed");
     }
   };
 
-  // Save practice evidence (employee)
-  const handlePracticeBlur = async (index) => {
-    const row = rows[index];
-    if (!row.practiceEvidence) return;
+  // Practice file upload
+  const handlePracticeFileChange = async (i, file) => {
+    if (!file) return;
+    try {
+      const url = await gapService.uploadFile(file);
+      setRows((prev) => {
+        const updated = [...prev];
+        updated[i].practiceEvidence = url;
+        return updated;
+      });
+      const saved = await gapService.saveEntry({
+        ...rows[i],
+        practiceEvidence: url,
+        createdBy: user?.id,
+      });
+      handleInputChange(i, "gapId", saved._id);
+    } catch {
+      alert("Upload failed");
+    }
+  };
 
-    const entry = {
-      clause: row.clause,
-      standardRequirement: row.standardRequirement,
-      question: row.question,
-      practiceEvidence: row.practiceEvidence,
-      documentURL: row.documentEvidence,
-      createdBy: user?.id,
+  const handleDeleteFile = async (i, field) => {
+    const row = rows[i];
+    const fileUrl = row[field];
+
+    if (!fileUrl) return;
+    if (!window.confirm("Are you sure you want to delete this file?")) return;
+
+    // Map frontend field names to backend fields
+    const backendFieldMap = {
+      documentEvidence: "documentURL",
+      practiceEvidence: "practiceEvidence",
     };
+    const backendField = backendFieldMap[field];
+    if (!backendField) {
+      console.error("Unknown field:", field);
+      return;
+    }
 
     try {
-      const saved = await gapService.saveEntry(entry);
-      handleInputChange(index, "gapId", saved._id);
+      await gapService.deleteDocumentByUrl(fileUrl, backendField);
+
+      // Update UI state
+      setRows((prev) => {
+        const updated = [...prev];
+        updated[i][field] = null;
+        return updated;
+      });
+
+      alert("File deleted successfully");
     } catch (err) {
-      console.error("Practice evidence save failed:", err);
+      console.error("Delete failed:", err);
+      alert("Error deleting file");
     }
   };
 
-  // Auditor updates scores/remarks
-  const handleAuditorChange = async (index, field, value) => {
-    const row = rows[index];
-    handleInputChange(index, field, value);
+  // Save practice text on blur
+  const handlePracticeBlur = async (i) => {
+    const r = rows[i];
+    if (!r.practiceEvidenceText) return;
+    try {
+      const saved = await gapService.saveEntry({
+        ...r,
+        createdBy: user?.id,
+      });
+      handleInputChange(i, "gapId", saved._id);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-    if (row.gapId) {
-      const update = {
-        docScore: row.docScore,
-        practiceScore: row.practiceScore,
-        docRemarks: row.docRemarks,
-        practiceRemarks: row.practiceRemarks,
+  // Auditor score/remark updates
+  const handleAuditorChange = async (i, field, value) => {
+    const r = rows[i];
+    handleInputChange(i, field, value);
+    if (!r.gapId) return;
+    try {
+      await gapService.updateEntry(r.gapId, {
+        ...r,
+        [field]: value,
         verifiedBy: user?.id,
-      };
-      update[field] = value;
-      try {
-        await gapService.updateEntry(row.gapId, update);
-      } catch (err) {
-        console.error("Auditor update failed:", err);
-      }
+      });
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  // Group rows by clause
-  const grouped = rows.reduce((acc, row, idx) => {
-    if (!acc[row.clause]) acc[row.clause] = [];
-    acc[row.clause].push({ ...row, idx });
+  // Group by clause
+  const grouped = rows.reduce((acc, r, idx) => {
+    if (!acc[r.clause]) acc[r.clause] = [];
+    acc[r.clause].push({ ...r, idx });
     return acc;
   }, {});
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">New Assessment</h2>
-      <p className="mb-2 text-gray-600">
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="flex items-center gap-3 mb-6">
+        <ShieldCheck className="text-blue-600" size={28} />
+        <h2 className="text-2xl font-bold text-gray-800">New Assessment</h2>
+      </div>
+
+      <div className="bg-blue-50 p-3 rounded-lg mb-4 text-sm text-gray-700">
         Logged in as: <strong>{user?.name || "Unknown"}</strong> | Role:{" "}
-        <strong>{userRole}</strong> | Department:{" "}
+        <strong className="capitalize">{userRole}</strong> | Department:{" "}
         <strong>{user?.department?.name || "N/A"}</strong>
-      </p>
+      </div>
 
-      <table className="table-auto w-full border-collapse border border-gray-300 text-sm">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="border p-2 w-48">Clause / Control</th>
-            <th className="border p-2 w-72">Question</th>
-            <th className="border p-2 w-40">Document Evidence</th>
-            <th className="border p-2 w-60">Practice Evidence</th>
-            <th className="border p-2 w-28">Doc Score</th>
-            <th className="border p-2 w-28">Practice Score</th>
-            <th className="border p-2 w-52">Doc Remarks</th>
-            <th className="border p-2 w-52">Practice Remarks</th>
-          </tr>
-        </thead>
-        <tbody>
-          {Object.keys(grouped).map((clause, i) => (
-            <React.Fragment key={i}>
-              <tr className="bg-blue-50">
-                <td className="border p-2 font-semibold" colSpan="8">
-                  <div className="font-semibold">{clause}</div>
-                  <div className="text-gray-700 text-sm mt-1">
-                    {grouped[clause][0].standardRequirement}
-                  </div>
-                </td>
-              </tr>
+      {Object.keys(grouped).map((clause, i) => (
+        <div
+          key={i}
+          className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 overflow-hidden"
+        >
+          <div className="bg-blue-100 px-4 py-3 border-b border-gray-200 flex items-center gap-2">
+            <FileText className="text-blue-600" size={20} />
+            <div>
+              <h3 className="font-semibold text-gray-800">{clause}</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {grouped[clause][0].standardRequirement}
+              </p>
+            </div>
+          </div>
 
-              {grouped[clause].map((row) => (
-                <tr key={row.idx}>
-                  <td className="border p-2"></td>
-                  <td className="border p-2">{row.question}</td>
+          <div className="divide-y divide-gray-100">
+            {grouped[clause].map((row) => (
+              <div
+                key={row.idx}
+                className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm"
+              >
+                {/* Document Evidence */}
+                <div>
+                  <p className="font-medium text-gray-800 mb-1">
+                    {row.question}
+                  </p>
+                  {userRole !== "auditor" && (
+                    <label className="flex items-center gap-2 cursor-pointer text-blue-600 hover:text-blue-800 text-xs">
+                      <Upload size={14} /> Upload
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={(e) =>
+                          handleFileChange(row.idx, e.target.files[0])
+                        }
+                      />
+                    </label>
+                  )}
+                  {row.documentEvidence && (
+                    <div className="mt-1 flex items-center gap-2">
+                      <button
+                        onClick={() => setSelectedDoc(row.documentEvidence)}
+                        className="flex items-center gap-1 text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded"
+                      >
+                        <Eye size={14} /> View
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleDeleteFile(row.idx, "documentEvidence")
+                        }
+                        className="flex items-center gap-1 text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+                      >
+                        <X size={14} /> Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
 
-                  {/* Document Evidence */}
-                  <td className="border p-2 flex items-center gap-2">
-                    {userRole !== "auditor" && (
-                      <label className="flex items-center gap-1 cursor-pointer bg-gray-200 px-2 py-1 rounded text-xs">
-                        <Upload size={14} /> Upload
+                {/* Practice Evidence */}
+                <div>
+                  <p className="font-medium text-gray-800 mb-1">
+                    Practice Evidence
+                  </p>
+                  {userRole !== "auditor" ? (
+                    <>
+                      <label className="flex items-center gap-2 cursor-pointer text-green-600 hover:text-green-800 text-xs">
+                        <Upload size={14} /> Upload File
                         <input
                           type="file"
                           className="hidden"
                           onChange={(e) =>
-                            handleFileChange(row.idx, e.target.files[0])
+                            handlePracticeFileChange(row.idx, e.target.files[0])
                           }
                         />
                       </label>
-                    )}
-                    {row.documentEvidence && (
-                      <button
-                        onClick={() => setSelectedDoc(row.documentEvidence)}
-                        className="flex items-center gap-1 px-2 py-1 bg-blue-500 text-white rounded text-xs"
-                      >
-                        <Eye size={14} /> View
-                      </button>
-                    )}
-                  </td>
+                      {row.practiceEvidence && (
+                        <div className="mt-1 flex items-center gap-2">
+                          <button
+                            onClick={() => setSelectedDoc(row.practiceEvidence)}
+                            className="flex items-center gap-1 text-xs bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded"
+                          >
+                            <Eye size={14} /> View
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleDeleteFile(row.idx, "practiceEvidence")
+                            }
+                            className="flex items-center gap-1 text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded"
+                          >
+                            <X size={14} /> Delete
+                          </button>
+                        </div>
+                      )}
 
-                  {/* Practice Evidence */}
-                  <td className="border p-2">
-                    {userRole !== "auditor" ? (
                       <textarea
-                        className="w-full border rounded p-1"
+                        className="w-full border rounded-md p-2 text-sm focus:ring-2 focus:ring-green-400 mt-2"
                         rows="2"
-                        value={row.practiceEvidence}
+                        value={row.practiceEvidenceText || ""}
+                        placeholder="Additional practice notes..."
                         onChange={(e) =>
                           handleInputChange(
                             row.idx,
-                            "practiceEvidence",
+                            "practiceEvidenceText",
                             e.target.value
                           )
                         }
                         onBlur={() => handlePracticeBlur(row.idx)}
                       />
-                    ) : (
-                      <span>{row.practiceEvidence}</span>
-                    )}
-                  </td>
+                    </>
+                  ) : (
+                    <span className="text-gray-700">
+                      {row.practiceEvidenceText || row.practiceEvidence || "—"}
+                    </span>
+                  )}
+                </div>
 
-                  {/* Doc Score */}
-                  <td className="border p-2">
-                    {userRole === "auditor" ? (
+                {/* Scores */}
+                <div>
+                  <p className="font-medium text-gray-800 mb-1">Scores</p>
+                  {userRole === "auditor" ? (
+                    <>
                       <select
-                        className="border rounded p-1"
+                        className="border rounded-md w-full mb-2 p-1 text-sm"
                         value={row.docScore}
                         onChange={(e) =>
                           handleAuditorChange(
@@ -285,21 +359,13 @@ const NewAssessment = () => {
                           )
                         }
                       >
-                        <option value="">Select</option>
+                        <option value="">Doc Score</option>
                         <option value="0">0 - Not Available</option>
                         <option value="1">1 - Partial</option>
                         <option value="2">2 - Compliant</option>
                       </select>
-                    ) : (
-                      <span>{row.docScore}</span>
-                    )}
-                  </td>
-
-                  {/* Practice Score */}
-                  <td className="border p-2">
-                    {userRole === "auditor" ? (
                       <select
-                        className="border rounded p-1"
+                        className="border rounded-md w-full p-1 text-sm"
                         value={row.practiceScore}
                         onChange={(e) =>
                           handleAuditorChange(
@@ -309,23 +375,30 @@ const NewAssessment = () => {
                           )
                         }
                       >
-                        <option value="">Select</option>
+                        <option value="">Practice Score</option>
                         <option value="0">0 - Not Practiced</option>
                         <option value="1">1 - Partial</option>
                         <option value="2">2 - Fully Practiced</option>
                       </select>
-                    ) : (
-                      <span>{row.practiceScore}</span>
-                    )}
-                  </td>
+                    </>
+                  ) : (
+                    <div className="text-gray-700 space-y-1">
+                      <div>Doc Score: {row.docScore || "—"}</div>
+                      <div>Practice Score: {row.practiceScore || "—"}</div>
+                    </div>
+                  )}
+                </div>
 
-                  {/* Doc Remarks */}
-                  <td className="border p-2">
-                    {userRole === "auditor" ? (
+                {/* Remarks */}
+                <div>
+                  <p className="font-medium text-gray-800 mb-1">Remarks</p>
+                  {userRole === "auditor" ? (
+                    <>
                       <textarea
-                        className="w-full border rounded p-1"
+                        className="w-full border rounded-md p-1 mb-2 text-sm"
                         rows="2"
                         value={row.docRemarks}
+                        placeholder="Doc remarks..."
                         onChange={(e) =>
                           handleAuditorChange(
                             row.idx,
@@ -334,18 +407,11 @@ const NewAssessment = () => {
                           )
                         }
                       />
-                    ) : (
-                      <span>{row.docRemarks}</span>
-                    )}
-                  </td>
-
-                  {/* Practice Remarks */}
-                  <td className="border p-2">
-                    {userRole === "auditor" ? (
                       <textarea
-                        className="w-full border rounded p-1"
+                        className="w-full border rounded-md p-1 text-sm"
                         rows="2"
                         value={row.practiceRemarks}
+                        placeholder="Practice remarks..."
                         onChange={(e) =>
                           handleAuditorChange(
                             row.idx,
@@ -354,39 +420,45 @@ const NewAssessment = () => {
                           )
                         }
                       />
-                    ) : (
-                      <span>{row.practiceRemarks}</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </React.Fragment>
-          ))}
-        </tbody>
-      </table>
+                    </>
+                  ) : (
+                    <div className="text-gray-700 space-y-1">
+                      <div>{row.docRemarks || "—"}</div>
+                      <div>{row.practiceRemarks || "—"}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
 
-      {/* Modal for viewing uploaded document */}
+      {/* Document Modal */}
       {selectedDoc && (
         <div
           className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50"
           onClick={() => setSelectedDoc(null)}
         >
           <div
-            className="bg-white rounded-lg p-4 w-4/5 max-w-3xl relative"
+            className="bg-white rounded-lg p-4 w-11/12 md:w-3/4 lg:w-1/2 relative shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="font-semibold text-lg">Uploaded Document</h3>
+            <div className="flex justify-between items-center mb-3 border-b pb-2">
+              <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
+                <ClipboardCheck className="text-blue-600" size={18} /> Uploaded
+                Document
+              </h3>
               <button
                 onClick={() => setSelectedDoc(null)}
-                className="text-red-500"
+                className="text-red-500 hover:text-red-700"
               >
                 <X size={20} />
               </button>
             </div>
             <iframe
               src={`https://cftoolbackend.duckdns.org${selectedDoc}`}
-              className="w-full h-96 border rounded"
+              className="w-full h-96 border rounded-md"
               title="Document Preview"
             />
           </div>

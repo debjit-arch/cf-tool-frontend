@@ -33,28 +33,28 @@ const tiles = [
   },
 ];
 
-const whyChooseItems = [
-  {
-    icon: "🛡️",
-    title: "Real-time Protection",
-    desc: "Get alerts and insights instantly to prevent risks and breaches.",
-  },
-  {
-    icon: "🔒",
-    title: "Data Privacy First",
-    desc: "We ensure your business data stays encrypted and secure.",
-  },
-  {
-    icon: "📊",
-    title: "Smart Analytics",
-    desc: "Track risk trends and make informed decisions with AI-driven insights.",
-  },
-  {
-    icon: "👥",
-    title: "Team Collaboration",
-    desc: "Assign risks, manage tasks, and work together in real-time.",
-  },
-];
+// const whyChooseItems = [
+//   {
+//     icon: "🛡️",
+//     title: "Real-time Protection",
+//     desc: "Get alerts and insights instantly to prevent risks and breaches.",
+//   },
+//   {
+//     icon: "🔒",
+//     title: "Data Privacy First",
+//     desc: "We ensure your business data stays encrypted and secure.",
+//   },
+//   {
+//     icon: "📊",
+//     title: "Smart Analytics",
+//     desc: "Track risk trends and make informed decisions with AI-driven insights.",
+//   },
+//   {
+//     icon: "👥",
+//     title: "Team Collaboration",
+//     desc: "Assign risks, manage tasks, and work together in real-time.",
+//   },
+// ];
 
 const Dashboard = () => {
   const history = useHistory();
@@ -130,7 +130,7 @@ const Dashboard = () => {
               Identify, analyze, and manage cybersecurity risks with ease using SafeSphere.
             </p>
 
-            {/* Why Choose Section */}
+            {/* Why Choose Section
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {whyChooseItems.map(({ icon, title, desc }, idx) => (
                 <div
@@ -142,7 +142,7 @@ const Dashboard = () => {
                   <p className="text-sm text-gray-600">{desc}</p>
                 </div>
               ))}
-            </div>
+            </div> */}
           </section>
         </main>
 
@@ -202,10 +202,10 @@ const Dashboard = () => {
 
       {/* WHY CHOOSE SECTION */}
       <section className="py-12 px-6 bg-white/50">
-        <h3 className="text-2xl md:text-3xl font-bold text-center mb-10 text-gray-900">
+        {/* <h3 className="text-2xl md:text-3xl font-bold text-center mb-10 text-gray-900">
           Why Choose SafeSphere?
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+        </h3> */}
+        {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           {whyChooseItems.map(({ icon, title, desc }, idx) => (
             <div
               key={idx}
@@ -216,7 +216,7 @@ const Dashboard = () => {
               <p className="text-xs md:text-sm text-gray-600">{desc}</p>
             </div>
           ))}
-        </div>
+        </div> */}
       </section>
 
       {/* KEY FEATURES SECTION */}
@@ -264,7 +264,7 @@ const Dashboard = () => {
 
       {/* FOOTER */}
       <footer className="py-4 text-center text-xs md:text-sm text-gray-500 border-t bg-white">
-        © {new Date().getFullYear()} SAFESPHERE · All rights reserved
+        © {new Date().getFullYear()} SAFESPHERE · All rights reserved · Made in India
       </footer>
     </div>
   );

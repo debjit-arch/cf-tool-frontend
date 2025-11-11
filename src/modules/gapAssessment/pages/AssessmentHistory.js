@@ -1,70 +1,7 @@
-// import React, { useEffect, useState } from "react";
-// import gapService from "../services/gapService";
-
-// const AssessmentHistory = () => {
-//   const [gaps, setGaps] = useState([]);
-//   const [selectedGap, setSelectedGap] = useState(null);
-
-//   useEffect(() => {
-//     const fetchGaps = async () => {
-//       try {
-//         const data = await gapService.getGaps();
-//         setGaps(data || []);
-//       } catch (err) {
-//         console.error(err);
-//       }
-//     };
-//     fetchGaps();
-//   }, []);
-
-//   return (
-//     <div style={{ marginTop: 60, padding: 15, maxWidth: 900, margin: "60px auto 0" }}>
-//       <div style={{ background: "white", borderRadius: 12, padding: 20, marginBottom: 20, boxShadow: "0 3px 12px rgba(0,0,0,0.06)", border: "1px solid #e9ecef", textAlign: "center" }}>
-//         <h1 style={{ color: "#2c3e50", fontSize: 22 }}>📜 Assessment History</h1>
-//         <p style={{ color: "#7f8c8d", fontSize: 14 }}>View previously reviewed documents and their final statuses.</p>
-//       </div>
-
-//       <table style={{ width: "100%", borderCollapse: "collapse", background: "white", borderRadius: 10, overflow: "hidden", boxShadow: "0 3px 12px rgba(0,0,0,0.06)" }}>
-//         <thead>
-//           <tr>
-//             <th style={thStyle}>Sl.No</th>
-//             <th style={thStyle}>Document Name</th>
-//             <th style={thStyle}>Status</th>
-//             <th style={thStyle}>Score</th>
-//             <th style={thStyle}>Missing Sections</th>
-//           </tr>
-//         </thead>
-//         <tbody>
-//           {gaps.length === 0 ? (
-//             <tr>
-//               <td colSpan={5} style={{ textAlign: "center", padding: 12 }}>No assessment history found</td>
-//             </tr>
-//           ) : (
-//             gaps.map((gap, index) => (
-//               <tr key={gap.docId}>
-//                 <td style={tdStyle}>{index + 1}</td>
-//                 <td style={tdStyle}>{gap.docName || "Unnamed Document"}</td>
-//                 <td style={tdStyle}>{gap.status}</td>
-//                 <td style={tdStyle}>{gap.score ?? "-"}</td>
-//                 <td style={tdStyle}>{(gap.missing_sections || []).join(", ") || "-"}</td>
-//               </tr>
-//             ))
-//           )}
-//         </tbody>
-//       </table>
-//     </div>
-//   );
-// };
-
-// const thStyle = { padding: 12, borderBottom: "1px solid #e9ecef", background: "#f8f9fa" };
-// const tdStyle = { padding: 12, borderBottom: "1px solid #e9ecef" };
-
-// export default AssessmentHistory;
-
-
 import React, { useEffect, useState } from "react";
 import gapService from "../services/gapService";
 import { useHistory } from "react-router-dom";
+import { ArrowLeft, ArrowRight, History as HistoryIcon } from "lucide-react";
 
 const AssessmentHistory = () => {
   const [gaps, setGaps] = useState([]);
@@ -84,7 +21,6 @@ const AssessmentHistory = () => {
     fetchGaps();
   }, []);
 
-  // Pagination logic
   const indexOfLastGap = currentPage * gapsPerPage;
   const indexOfFirstGap = indexOfLastGap - gapsPerPage;
   const currentGaps = gaps.slice(indexOfFirstGap, indexOfLastGap);
@@ -92,7 +28,7 @@ const AssessmentHistory = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Back to Dashboard button styles and handlers
+  // Button Styles
   const backBtnStyle = {
     position: "fixed",
     top: "35px",
@@ -109,34 +45,37 @@ const AssessmentHistory = () => {
     transition: "all 0.3s ease",
     display: "inline-flex",
     alignItems: "center",
+    gap: "8px",
     zIndex: 99,
   };
 
   const handleBackBtnMouseEnter = (e) => {
-    e.target.style.backgroundColor = "#0046a3";
-    e.target.style.boxShadow = "0 6px 12px rgba(0, 70, 163, 0.5)";
-    e.target.style.transform = "translateY(-2px)";
+    e.currentTarget.style.backgroundColor = "#0046a3";
+    e.currentTarget.style.boxShadow = "0 6px 12px rgba(0, 70, 163, 0.5)";
+    e.currentTarget.style.transform = "translateY(-2px)";
   };
 
   const handleBackBtnMouseLeave = (e) => {
-    e.target.style.backgroundColor = "#005FCC";
-    e.target.style.boxShadow = "0 4px 8px rgba(0, 95, 204, 0.3)";
-    e.target.style.transform = "translateY(0)";
+    e.currentTarget.style.backgroundColor = "#005FCC";
+    e.currentTarget.style.boxShadow = "0 4px 8px rgba(0, 95, 204, 0.3)";
+    e.currentTarget.style.transform = "translateY(0)";
   };
 
   return (
     <div style={{ marginTop: 60, padding: 15, maxWidth: 900, margin: "60px auto 0" }}>
-      {/* Back to Dashboard Button */}
+      {/* Back Button */}
       <button
         style={backBtnStyle}
-        onClick={() => history.push("/gap-assessment")} // Adjust to your gap dashboard route if needed
+        onClick={() => history.push("/gap-assessment")}
         onMouseEnter={handleBackBtnMouseEnter}
         onMouseLeave={handleBackBtnMouseLeave}
         title="Back to Gap Assessment Dashboard"
       >
-        ← Back to Dashboard
+        <ArrowLeft size={18} />
+        Back to Dashboard
       </button>
 
+      {/* Header */}
       <div
         style={{
           background: "white",
@@ -148,12 +87,15 @@ const AssessmentHistory = () => {
           textAlign: "center",
         }}
       >
-        <h1 style={{ color: "#2c3e50", fontSize: 22 }}>📜 Assessment History</h1>
+        <h1 style={{ color: "#2c3e50", fontSize: 22, display: "flex", justifyContent: "center", alignItems: "center", gap: "8px" }}>
+          <HistoryIcon size={22} /> Assessment History
+        </h1>
         <p style={{ color: "#7f8c8d", fontSize: 14 }}>
           View previously reviewed documents and their final statuses.
         </p>
       </div>
 
+      {/* Table */}
       <table
         style={{
           width: "100%",
@@ -194,7 +136,7 @@ const AssessmentHistory = () => {
         </tbody>
       </table>
 
-      {/* Pagination Controls */}
+      {/* Pagination */}
       {totalPages > 1 && (
         <div
           style={{
@@ -206,37 +148,16 @@ const AssessmentHistory = () => {
             flexWrap: "wrap",
           }}
         >
+          {/* Prev */}
           <button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
-            style={{
-              padding: "8px 14px",
-              borderRadius: 6,
-              border: "1px solid #0056b3",
-              margin: "0 4px",
-              cursor: currentPage === 1 ? "not-allowed" : "pointer",
-              fontWeight: 600,
-              backgroundColor: currentPage === 1 ? "#e9ecef" : "white",
-              color: currentPage === 1 ? "#6c757d" : "#0056b3",
-              userSelect: "none",
-              transition: "all 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              if (currentPage !== 1) {
-                e.target.style.backgroundColor = "#0056b3";
-                e.target.style.color = "white";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (currentPage !== 1) {
-                e.target.style.backgroundColor = "white";
-                e.target.style.color = "#0056b3";
-              }
-            }}
+            style={paginationButtonStyle(currentPage === 1)}
           >
-            ← Prev
+            <ArrowLeft size={16} /> Prev
           </button>
 
+          {/* Page Numbers */}
           {[...Array(totalPages).keys()].map((num) => {
             const pageNum = num + 1;
             const isActive = pageNum === currentPage;
@@ -245,63 +166,20 @@ const AssessmentHistory = () => {
                 key={pageNum}
                 onClick={() => paginate(pageNum)}
                 disabled={isActive}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: 6,
-                  border: "1px solid #0056b3",
-                  margin: "0 4px",
-                  cursor: isActive ? "default" : "pointer",
-                  fontWeight: 600,
-                  backgroundColor: isActive ? "#0056b3" : "white",
-                  color: isActive ? "white" : "#0056b3",
-                  userSelect: "none",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.target.style.backgroundColor = "#cce5ff";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.target.style.backgroundColor = "white";
-                  }
-                }}
+                style={pageButtonStyle(isActive)}
               >
                 {pageNum}
               </button>
             );
           })}
 
+          {/* Next */}
           <button
             onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
             disabled={currentPage === totalPages}
-            style={{
-              padding: "8px 14px",
-              borderRadius: 6,
-              border: "1px solid #0056b3",
-              margin: "0 4px",
-              cursor: currentPage === totalPages ? "not-allowed" : "pointer",
-              fontWeight: 600,
-              backgroundColor: currentPage === totalPages ? "#e9ecef" : "white",
-              color: currentPage === totalPages ? "#6c757d" : "#0056b3",
-              userSelect: "none",
-              transition: "all 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              if (currentPage !== totalPages) {
-                e.target.style.backgroundColor = "#0056b3";
-                e.target.style.color = "white";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (currentPage !== totalPages) {
-                e.target.style.backgroundColor = "white";
-                e.target.style.color = "#0056b3";
-              }
-            }}
+            style={paginationButtonStyle(currentPage === totalPages)}
           >
-            Next →
+            Next <ArrowRight size={16} />
           </button>
         </div>
       )}
@@ -309,7 +187,35 @@ const AssessmentHistory = () => {
   );
 };
 
+// Styles
 const thStyle = { padding: 12, borderBottom: "1px solid #e9ecef", background: "#f8f9fa" };
 const tdStyle = { padding: 12, borderBottom: "1px solid #e9ecef" };
+
+const paginationButtonStyle = (disabled) => ({
+  padding: "8px 14px",
+  borderRadius: 6,
+  border: "1px solid #0056b3",
+  margin: "0 4px",
+  cursor: disabled ? "not-allowed" : "pointer",
+  fontWeight: 600,
+  backgroundColor: disabled ? "#e9ecef" : "white",
+  color: disabled ? "#6c757d" : "#0056b3",
+  userSelect: "none",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+});
+
+const pageButtonStyle = (isActive) => ({
+  padding: "8px 14px",
+  borderRadius: 6,
+  border: "1px solid #0056b3",
+  margin: "0 4px",
+  cursor: isActive ? "default" : "pointer",
+  fontWeight: 600,
+  backgroundColor: isActive ? "#0056b3" : "white",
+  color: isActive ? "white" : "#0056b3",
+  userSelect: "none",
+});
 
 export default AssessmentHistory;

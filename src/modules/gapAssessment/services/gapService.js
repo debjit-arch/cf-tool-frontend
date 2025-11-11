@@ -1,5 +1,14 @@
 const API_URL = "https://cftoolbackend.duckdns.org/api/gaps";
 
+async function request(url, options = {}) {
+  const res = await fetch(url, options);
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(msg || "Request failed");
+  }
+  return res.json();
+}
+
 const gapService = {
   uploadFile: async (file) => {
     if (!file) throw new Error("No file provided");
@@ -59,6 +68,14 @@ const gapService = {
       console.error("Update entry failed", err);
       throw err;
     }
+  },
+
+  deleteDocumentByUrl(url, field) {
+    return request(`${API_URL}/by-url`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url, field }),
+    });
   },
 };
 

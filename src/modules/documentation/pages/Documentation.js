@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useHistory } from "react-router-dom";
 import riskService from "../../riskAssesment/services/riskService";
+import { FileText, FileSpreadsheet, Shield, BookOpen } from "lucide-react"; // 🔹 Added Lucide icons
 
 const Documentation = () => {
   const history = useHistory();
@@ -16,7 +17,7 @@ const Documentation = () => {
 
   const loadControlStats = async () => {
     try {
-      const risks = await riskService.getAllRisks(); // ✅ fetch risks from API
+      const risks = await riskService.getAllRisks();
       const withControls = risks.filter((r) => r.controlReference).length;
       const withoutControls = risks.length - withControls;
 
@@ -30,8 +31,7 @@ const Documentation = () => {
     }
   };
 
-  // 🔹 Smaller UI styles
-  // 🔹 Smaller UI styles
+  // Styles
   const pageStyle = {
     marginTop: "50px",
     padding: "10px",
@@ -84,16 +84,19 @@ const Documentation = () => {
     cursor: "pointer",
   };
 
+  const iconStyle = { width: 36, height: 36, marginBottom: 10 };
+
   return (
     <div style={pageStyle}>
       {/* Header */}
       <div style={headerStyle}>
         <h1 style={{ color: "#2c3e50", marginBottom: "8px", fontSize: "22px" }}>
-          📄 Documentation Dashboard
+          <FileText size={22} style={{ marginRight: 6, verticalAlign: "middle" }} />
+          Documentation Dashboard
         </h1>
         <p style={{ color: "#7f8c8d", fontSize: "14px" }}>
           Generate and manage your Statement of Applicability (SoA) and control
-          documentation
+          documentation.
         </p>
       </div>
 
@@ -102,78 +105,41 @@ const Documentation = () => {
         <div
           style={{ ...statCardStyle, borderLeft: "3px solid #9b59b6" }}
           onClick={() => history.push("/documentation/soa")}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.transform = "translateY(-2px)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.transform = "translateY(0)")
-          }
+          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
         >
-          <h2
-            style={{ color: "#9b59b6", margin: "0 0 6px 0", fontSize: "28px" }}
-          >
+          <h2 style={{ color: "#9b59b6", margin: "0 0 6px 0", fontSize: "28px" }}>
             {controlStats.total}
           </h2>
-          <p
-            style={{
-              color: "#7f8c8d",
-              margin: 0,
-              fontSize: "13px",
-              fontWeight: "600",
-            }}
-          >
+          <p style={{ color: "#7f8c8d", margin: 0, fontSize: "13px", fontWeight: "600" }}>
             Total Risks
           </p>
         </div>
+
         <div
           style={{ ...statCardStyle, borderLeft: "3px solid #27ae60" }}
           onClick={() => history.push("/documentation/soa")}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.transform = "translateY(-2px)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.transform = "translateY(0)")
-          }
+          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
         >
-          <h2
-            style={{ color: "#27ae60", margin: "0 0 6px 0", fontSize: "28px" }}
-          >
+          <h2 style={{ color: "#27ae60", margin: "0 0 6px 0", fontSize: "28px" }}>
             {controlStats.withControls}
           </h2>
-          <p
-            style={{
-              color: "#7f8c8d",
-              margin: 0,
-              fontSize: "13px",
-              fontWeight: "600",
-            }}
-          >
+          <p style={{ color: "#7f8c8d", margin: 0, fontSize: "13px", fontWeight: "600" }}>
             With Controls
           </p>
         </div>
+
         <div
           style={{ ...statCardStyle, borderLeft: "3px solid #e74c3c" }}
           onClick={() => history.push("/documentation/soa")}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.transform = "translateY(-2px)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.transform = "translateY(0)")
-          }
+          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
         >
-          <h2
-            style={{ color: "#e74c3c", margin: "0 0 6px 0", fontSize: "28px" }}
-          >
+          <h2 style={{ color: "#e74c3c", margin: "0 0 6px 0", fontSize: "28px" }}>
             {controlStats.withoutControls}
           </h2>
-          <p
-            style={{
-              color: "#7f8c8d",
-              margin: 0,
-              fontSize: "13px",
-              fontWeight: "600",
-            }}
-          >
+          <p style={{ color: "#7f8c8d", margin: 0, fontSize: "13px", fontWeight: "600" }}>
             Without Controls
           </p>
         </div>
@@ -188,17 +154,11 @@ const Documentation = () => {
             color: "white",
           }}
           onClick={() => history.push("/documentation/soa")}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.transform = "translateY(-3px)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.transform = "translateY(0)")
-          }
+          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-3px)")}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
         >
-          <div style={{ fontSize: "32px", marginBottom: "10px" }}>📑</div>
-          <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>
-            Generate SoA
-          </h3>
+          <FileSpreadsheet style={iconStyle} />
+          <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>Generate SoA</h3>
           <p style={{ margin: 0, fontSize: "13px", opacity: 0.9 }}>
             Automatically create Statement of Applicability from controls
           </p>
@@ -211,23 +171,16 @@ const Documentation = () => {
             color: "white",
           }}
           onClick={() => history.push("/documentation/controls")}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.transform = "translateY(-3px)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.transform = "translateY(0)")
-          }
+          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-3px)")}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
         >
-          <div style={{ fontSize: "32px", marginBottom: "10px" }}>🛡️</div>
-          <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>
-            Control Library
-          </h3>
+          <Shield style={iconStyle} />
+          <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>Control Library</h3>
           <p style={{ margin: 0, fontSize: "13px", opacity: 0.9 }}>
             Browse and manage security controls
           </p>
         </div>
 
-        {/* ✅ New MLD Button */}
         <div
           style={{
             ...actionCardStyle,
@@ -235,14 +188,10 @@ const Documentation = () => {
             color: "white",
           }}
           onClick={() => history.push("/documentation/mld")}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.transform = "translateY(-3px)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.transform = "translateY(0)")
-          }
+          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-3px)")}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
         >
-          <div style={{ fontSize: "32px", marginBottom: "10px" }}>📚</div>
+          <BookOpen style={iconStyle} />
           <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>MLD</h3>
           <p style={{ margin: 0, fontSize: "13px", opacity: 0.9 }}>
             Master List of Documents
