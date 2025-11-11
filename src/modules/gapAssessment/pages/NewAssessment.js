@@ -385,7 +385,7 @@ const NewAssessment = () => {
               </button>
             </div>
             <iframe
-              src={`http://localhost:4000${selectedDoc}`}
+              src={`https://cftoolbackend.duckdns.org${selectedDoc}`}
               className="w-full h-96 border rounded"
               title="Document Preview"
             />

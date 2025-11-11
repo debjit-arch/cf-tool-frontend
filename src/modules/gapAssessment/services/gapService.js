@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:4000/api/gaps";
+const API_URL = "https://cftoolbackend.duckdns.org/api/gaps";
 
 const gapService = {
   uploadFile: async (file) => {
