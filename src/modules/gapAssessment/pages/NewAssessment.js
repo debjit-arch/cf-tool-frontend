@@ -1,752 +1,399 @@
-// import React, { useEffect, useState } from "react";
-// import { useHistory } from "react-router-dom";
-// import documentationService from "../../documentation/services/documentationService";
-// import gapService from "../services/gapService"; // ✅ Import gap service
-
-// const NewAssessment = () => {
-//   const [documents, setDocuments] = useState([]);
-//   const [gaps, setGaps] = useState({});
-//   const [selectedDoc, setSelectedDoc] = useState(null);
-
-//   const history = useHistory()
-
-//   useEffect(() => {
-//     const fetchData = async () => {
-//       try {
-//         const docs = await documentationService.getDocuments();
-//         const gapData = await gapService.getGaps();
-
-//         // Convert gap array to object for fast lookup: { docId: status }
-//         const gapMap = (gapData || []).reduce((acc, gap) => {
-//           acc[gap.docId] = gap.status;
-//           return acc;
-//         }, {});
-
-//         setDocuments(docs || []);
-//         setGaps(gapMap);
-//       } catch (error) {
-//         console.error("Error fetching data:", error);
-//       }
-//     };
-//     fetchData();
-//   }, []);
-
-//   const updateStatus = async (doc, newStatus) => {
-//     try {
-//       setGaps((prev) => ({ ...prev, [doc.id]: newStatus })); // set immediately (UI shows Checking...)
-
-//       if (newStatus === "Checking...") {
-//         // Call backend compliance check
-//         const result = await gapService.checkCompliance(doc.id); // returns { score: 85 }
-
-//         // Save final status as Score
-//         setGaps((prev) => ({ ...prev, [doc.id]: `Score: ${result.score}` }));
-//       } else {
-//         // For normal statuses
-//         await gapService.updateGap(doc.id, { status: newStatus });
-//         setGaps((prev) => ({ ...prev, [doc.id]: newStatus }));
-//       }
-//     } catch (error) {
-//       console.error("Error updating status:", error);
-//       setGaps((prev) => ({ ...prev, [doc.id]: "Error" }));
-//     }
-//   };
-
-//   const handleMarkVerification = (doc) => {
-//     updateStatus(doc, "Checking...");
-//   };
-
-//   const handleApprove = (doc) => {
-//     updateStatus(doc, "Closed");
-//   };
-
-//   const handleReject = (doc) => {
-//     updateStatus(doc, "Rejected");
-//   };
-
-//   return (
-//     <div
-//       style={{
-//         marginTop: "60px",
-//         padding: "15px",
-//         maxWidth: "900px",
-//         margin: "60px auto 0",
-//       }}
-//     >
-//       {/* Header */}
-//       <div
-//         style={{
-//           background: "white",
-//           borderRadius: "12px",
-//           padding: "20px",
-//           marginBottom: "20px",
-//           boxShadow: "0 3px 12px rgba(0, 0, 0, 0.06)",
-//           border: "1px solid #e9ecef",
-//           textAlign: "center",
-//         }}
-//       >
-//         <h1 style={{ color: "#2c3e50", marginBottom: "8px", fontSize: "22px" }}>
-//           📝 New Assessment
-//         </h1>
-//         <p style={{ color: "#7f8c8d", fontSize: "14px" }}>
-//           Review uploaded documents, mark for verification, approve or reject.
-//         </p>
-//       </div>
-
-//       {/* Document Table */}
-//       <table
-//         style={{
-//           width: "100%",
-//           borderCollapse: "collapse",
-//           background: "white",
-//           borderRadius: "10px",
-//           overflow: "hidden",
-//           boxShadow: "0 3px 12px rgba(0,0,0,0.06)",
-//         }}
-//       >
-//         <thead>
-//           <tr>
-//             <th style={thStyle}>Sl.No</th>
-//             <th style={thStyle}>Document Name</th>
-//             <th style={thStyle}>Uploaded Date</th>
-//             <th style={thStyle}>Status</th>
-//             <th style={thStyle}>Actions</th>
-//           </tr>
-//         </thead>
-//         <tbody>
-//           {documents.length === 0 ? (
-//             <tr>
-//               <td colSpan="5" style={{ textAlign: "center", padding: "12px" }}>
-//                 No documents found
-//               </td>
-//             </tr>
-//           ) : (
-//             documents.map((doc, index) => (
-//               <tr key={doc.id}>
-//                 <td style={tdStyle}>{index + 1}</td>
-//                 <td style={tdStyle}>{doc.name || "Unnamed Document"}</td>
-//                 <td style={tdStyle}>
-//                   {doc.createdAt
-//                     ? new Date(doc.createdAt).toLocaleDateString()
-//                     : "N/A"}
-//                 </td>
-//                 <td style={tdStyle}>
-//                   <span
-//                     style={{
-//                       padding: "4px 8px",
-//                       borderRadius: "6px",
-//                       background: gaps[doc.id]?.startsWith("Score")
-//                         ? "#2980b9" // blue for score
-//                         : gaps[doc.id] === "Closed"
-//                         ? "#2ecc71"
-//                         : gaps[doc.id] === "Pending" ||
-//                           gaps[doc.id] === "Checking..."
-//                         ? "#f39c12"
-//                         : gaps[doc.id] === "Rejected"
-//                         ? "#e74c3c"
-//                         : "#bdc3c7",
-//                       color: "white",
-//                       fontSize: "12px",
-//                     }}
-//                   >
-//                     {gaps[doc.id] || "Open"}
-//                   </span>
-//                 </td>
-//                 <td style={tdStyle}>
-//                   <button
-//                     onClick={() => handleMarkVerification(doc)}
-//                     style={btnStyle("#f39c12")}
-//                   >
-//                     Verify
-//                   </button>
-//                   <button
-//                     onClick={() => setSelectedDoc(doc)}
-//                     style={btnStyle("#3498db")}
-//                   >
-//                     View
-//                   </button>
-//                   <button
-//                     onClick={() => handleApprove(doc)}
-//                     style={btnStyle("#2ecc71")}
-//                   >
-//                     Approve
-//                   </button>
-//                   <button
-//                     onClick={() => handleReject(doc)}
-//                     style={btnStyle("#e74c3c")}
-//                   >
-//                     Reject
-//                   </button>
-//                 </td>
-//               </tr>
-//             ))
-//           )}
-//         </tbody>
-//       </table>
-//       <div
-//         style={{
-//           position: "fixed",
-//           bottom: "30px",
-//           left: "30px",
-//           zIndex: 100,
-//         }}
-//       >
-//         <button
-//           onClick={() => history.push("/documentation/mld")}
-//           style={{
-//             width: "60px",
-//             height: "60px",
-//             borderRadius: "50%",
-//             background: "linear-gradient(45deg, #3498db, #2980b9)",
-//             color: "white",
-//             border: "none",
-//             fontSize: "24px",
-//             cursor: "pointer",
-//             boxShadow: "0 4px 15px rgba(52, 152, 219, 0.3)",
-//             transition: "all 0.3s ease",
-//           }}
-//           onMouseEnter={(e) => {
-//             e.target.style.transform = "scale(1.1)";
-//             e.target.style.boxShadow = "0 6px 20px rgba(52, 152, 219, 0.4)";
-//           }}
-//           onMouseLeave={(e) => {
-//             e.target.style.transform = "scale(1)";
-//             e.target.style.boxShadow = "0 4px 15px rgba(52, 152, 219, 0.3)";
-//           }}
-//           title="Go to MLD"
-//         >
-//           MLD
-//         </button>
-//       </div>
-
-//       <div
-//         style={{
-//           position: "fixed",
-//           bottom: "30px",
-//           right: "30px",
-//           zIndex: 100,
-//         }}
-//       >
-//         <button
-//           onClick={() => history.push("/gap-assessment/history")}
-//           style={{
-//             padding: "12px 25px",
-//             borderRadius: "50px",
-//             background: "linear-gradient(45deg, #27ae60, #2ecc71)",
-//             color: "white",
-//             border: "none",
-//             fontSize: "16px",
-//             fontWeight: "600",
-//             cursor: "pointer",
-//             boxShadow: "0 4px 15px rgba(39, 174, 96, 0.3)",
-//             transition: "all 0.3s ease",
-//           }}
-//           onMouseEnter={(e) => {
-//             e.target.style.transform = "scale(1.05)";
-//             e.target.style.boxShadow = "0 6px 20px rgba(39, 174, 96, 0.4)";
-//           }}
-//           onMouseLeave={(e) => {
-//             e.target.style.transform = "scale(1)";
-//             e.target.style.boxShadow = "0 4px 15px rgba(39, 174, 96, 0.3)";
-//           }}
-//           title="Go to History"
-//         >
-//           🚀 Go to History
-//         </button>
-//       </div>
-//       {/* Modal for Viewing Document */}
-//       {selectedDoc && (
-//         <div style={modalOverlay} onClick={() => setSelectedDoc(null)}>
-//           <div style={modalBox} onClick={(e) => e.stopPropagation()}>
-//             <h2 style={{ marginBottom: "15px" }}>{selectedDoc.name}</h2>
-//             <iframe
-//               src={`https://cftoolbackend.duckdns.org${selectedDoc.url}`}
-//               style={{
-//                 width: "100%",
-//                 height: "500px",
-//                 border: "1px solid #e9ecef",
-//                 borderRadius: "8px",
-//               }}
-//               title="Document Preview"
-//             />
-//             <button
-//               onClick={() => setSelectedDoc(null)}
-//               style={btnStyle("#e74c3c")}
-//             >
-//               Close
-//             </button>
-//           </div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// // 🔧 Small styles extracted for reusability
-// const thStyle = {
-//   padding: "12px",
-//   borderBottom: "1px solid #e9ecef",
-//   background: "#f8f9fa",
-// };
-
-// const tdStyle = {
-//   padding: "12px",
-//   borderBottom: "1px solid #e9ecef",
-// };
-
-// const btnStyle = (bgColor) => ({
-//   padding: "6px 12px",
-//   marginRight: "8px",
-//   borderRadius: "6px",
-//   background: bgColor,
-//   color: "white",
-//   border: "none",
-//   cursor: "pointer",
-// });
-
-// const modalOverlay = {
-//   position: "fixed",
-//   top: 0,
-//   left: 0,
-//   width: "100%",
-//   height: "100%",
-//   background: "rgba(0, 0, 0, 0.6)",
-//   display: "flex",
-//   justifyContent: "center",
-//   alignItems: "center",
-//   zIndex: 1000,
-// };
-
-// const modalBox = {
-//   background: "white",
-//   borderRadius: "12px",
-//   padding: "20px",
-//   width: "80%",
-//   maxWidth: "700px",
-//   boxShadow: "0 3px 12px rgba(0,0,0,0.2)",
-//   position: "relative",
-// };
-
-// export default NewAssessment;
-
-
-
 import React, { useEffect, useState } from "react";
-import { useHistory } from "react-router-dom";
-import documentationService from "../../documentation/services/documentationService";
+import { ISO_27001_CLAUSES, ISO_27001_CONTROL } from "../constant";
+import { Upload, Eye, X } from "lucide-react";
 import gapService from "../services/gapService";
 
 const NewAssessment = () => {
-  const [documents, setDocuments] = useState([]);
-  const [gaps, setGaps] = useState({});
+  const [rows, setRows] = useState([]);
   const [selectedDoc, setSelectedDoc] = useState(null);
+  const [user, setUser] = useState(null);
+  const [userRole, setUserRole] = useState("employee");
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const documentsPerPage = 5;
-
-  const history = useHistory();
-
+  // Load logged-in user from sessionStorage
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const docs = await documentationService.getDocuments();
-        const gapData = await gapService.getGaps();
-
-        const gapMap = (gapData || []).reduce((acc, gap) => {
-          acc[gap.docId] = gap.status;
-          return acc;
-        }, {});
-
-        setDocuments(docs || []);
-        setGaps(gapMap);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-    fetchData();
+    const rawUser = sessionStorage.getItem("user");
+    if (rawUser) {
+      const parsedUser = JSON.parse(rawUser);
+      console.log("Loaded user:", parsedUser); // ✅ check user
+      setUser(parsedUser);
+      setUserRole(parsedUser.role || "employee");
+    }
   }, []);
 
-  // Pagination logic
-  const indexOfLastDoc = currentPage * documentsPerPage;
-  const indexOfFirstDoc = indexOfLastDoc - documentsPerPage;
-  const currentDocuments = documents.slice(indexOfFirstDoc, indexOfLastDoc);
-  const totalPages = Math.ceil(documents.length / documentsPerPage);
+  useEffect(() => {
+    if (!user) return;
 
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+    const combinedClauses = [...ISO_27001_CLAUSES, ...ISO_27001_CONTROL];
+    console.log("Combined Clauses:", combinedClauses); // ✅ check constants
 
-  const updateStatus = async (doc, newStatus) => {
-    try {
-      setGaps((prev) => ({ ...prev, [doc.id]: newStatus }));
+    const filteredRows = combinedClauses
+      .flatMap((item) =>
+        item.auditQuestions.map((question) => {
+          return {
+            clause: item.clause,
+            standardRequirement: item.standardRequirement,
+            question:
+              typeof question === "string"
+                ? question
+                : question.text || question,
+            departments: Array.isArray(item.departments)
+              ? item.departments.map((d) =>
+                  typeof d === "string" ? d : d.name
+                )
+              : [],
+            documentEvidence: null,
+            practiceEvidence: "",
+            docScore: "",
+            practiceScore: "",
+            docRemarks: "",
+            practiceRemarks: "",
+            gapId: null,
+          };
+        })
+      )
+      .filter((row) => {
+        // If user has no department (auditor), include all rows
+        if (!user.department || !user.department.name) return true;
+        return row.departments.includes(user.department.name);
+      });
 
-      if (newStatus === "Checking...") {
-        const result = await gapService.checkCompliance(doc.id);
-        setGaps((prev) => ({ ...prev, [doc.id]: `Score: ${result.score}` }));
-      } else {
-        await gapService.updateGap(doc.id, { status: newStatus });
-        setGaps((prev) => ({ ...prev, [doc.id]: newStatus }));
+    console.log("Filtered Rows:", filteredRows); // ✅ check final rows
+    setRows(filteredRows);
+  }, [user]);
+
+  // Fetch existing gap entries from DB
+  useEffect(() => {
+    const fetchGaps = async () => {
+      try {
+        const gaps = await gapService.getGaps();
+        setRows((prev) =>
+          prev.map((row) => {
+            const gap = gaps.find(
+              (g) => g.clause === row.clause && g.question === row.question
+            );
+            if (gap) {
+              return {
+                ...row,
+                documentEvidence: gap.documentURL || null,
+                practiceEvidence: gap.practiceEvidence || "",
+                docScore: gap.docScore || "",
+                practiceScore: gap.practiceScore || "",
+                docRemarks: gap.docRemarks || "",
+                practiceRemarks: gap.practiceRemarks || "",
+                gapId: gap._id,
+              };
+            }
+            return row;
+          })
+        );
+      } catch (err) {
+        console.error("Failed to fetch gaps:", err);
       }
-    } catch (error) {
-      console.error("Error updating status:", error);
-      setGaps((prev) => ({ ...prev, [doc.id]: "Error" }));
+    };
+    fetchGaps();
+  }, []);
+
+  // Handle local input change
+  const handleInputChange = (index, field, value) => {
+    const updated = [...rows];
+    updated[index][field] = value;
+    setRows(updated);
+  };
+
+  // Upload document and save entry
+  const handleFileChange = async (index, file) => {
+    if (!file) return;
+    try {
+      const url = await gapService.uploadFile(file);
+
+      let updatedRow;
+      setRows((prev) => {
+        const updated = [...prev];
+        updated[index] = { ...updated[index], documentEvidence: url };
+        updatedRow = updated[index];
+        return updated;
+      });
+
+      const entry = {
+        clause: updatedRow.clause,
+        standardRequirement: updatedRow.standardRequirement,
+        question: updatedRow.question,
+        documentURL: url,
+        practiceEvidence: updatedRow.practiceEvidence || "",
+        createdBy: user?.id,
+      };
+
+      const saved = await gapService.saveEntry(entry);
+
+      setRows((prev) => {
+        const updated = [...prev];
+        updated[index] = { ...updated[index], gapId: saved._id };
+        return updated;
+      });
+    } catch (err) {
+      console.error("File upload/save failed:", err);
+      alert("File upload failed");
     }
   };
 
-  const handleMarkVerification = (doc) => {
-    updateStatus(doc, "Checking...");
+  // Save practice evidence (employee)
+  const handlePracticeBlur = async (index) => {
+    const row = rows[index];
+    if (!row.practiceEvidence) return;
+
+    const entry = {
+      clause: row.clause,
+      standardRequirement: row.standardRequirement,
+      question: row.question,
+      practiceEvidence: row.practiceEvidence,
+      documentURL: row.documentEvidence,
+      createdBy: user?.id,
+    };
+
+    try {
+      const saved = await gapService.saveEntry(entry);
+      handleInputChange(index, "gapId", saved._id);
+    } catch (err) {
+      console.error("Practice evidence save failed:", err);
+    }
   };
 
-  const handleApprove = (doc) => {
-    updateStatus(doc, "Closed");
+  // Auditor updates scores/remarks
+  const handleAuditorChange = async (index, field, value) => {
+    const row = rows[index];
+    handleInputChange(index, field, value);
+
+    if (row.gapId) {
+      const update = {
+        docScore: row.docScore,
+        practiceScore: row.practiceScore,
+        docRemarks: row.docRemarks,
+        practiceRemarks: row.practiceRemarks,
+        verifiedBy: user?.id,
+      };
+      update[field] = value;
+      try {
+        await gapService.updateEntry(row.gapId, update);
+      } catch (err) {
+        console.error("Auditor update failed:", err);
+      }
+    }
   };
 
-  const handleReject = (doc) => {
-    updateStatus(doc, "Rejected");
-  };
-
-  // Back to Dashboard button styles and handlers
-  const backBtnStyle = {
-    position: "fixed",
-    top: "35px",
-    right: "30px",
-    padding: "10px 20px",
-    borderRadius: "6px",
-    backgroundColor: "#005FCC",
-    border: "none",
-    color: "white",
-    fontSize: "1rem",
-    fontWeight: "600",
-    cursor: "pointer",
-    boxShadow: "0 4px 8px rgba(0, 95, 204, 0.3)",
-    transition: "all 0.3s ease",
-    display: "inline-flex",
-    alignItems: "center",
-    zIndex: 99,
-  };
-
-  const handleBackBtnMouseEnter = (e) => {
-    e.target.style.backgroundColor = "#0046a3";
-    e.target.style.boxShadow = "0 6px 12px rgba(0, 70, 163, 0.5)";
-    e.target.style.transform = "translateY(-2px)";
-  };
-
-  const handleBackBtnMouseLeave = (e) => {
-    e.target.style.backgroundColor = "#005FCC";
-    e.target.style.boxShadow = "0 4px 8px rgba(0, 95, 204, 0.3)";
-    e.target.style.transform = "translateY(0)";
-  };
+  // Group rows by clause
+  const grouped = rows.reduce((acc, row, idx) => {
+    if (!acc[row.clause]) acc[row.clause] = [];
+    acc[row.clause].push({ ...row, idx });
+    return acc;
+  }, {});
 
   return (
-    <div style={{ marginTop: "60px", padding: "15px", maxWidth: "900px", margin: "60px auto 0" }}>
-      {/* Back to Dashboard Button */}
-      <button
-        style={backBtnStyle}
-        onClick={() => history.push("/gap-assessment")}
-        onMouseEnter={handleBackBtnMouseEnter}
-        onMouseLeave={handleBackBtnMouseLeave}
-        title="Back to Dashboard"
-      >
-        ← Back to Dashboard
-      </button>
+    <div className="p-4">
+      <h2 className="text-xl font-bold mb-4">New Assessment</h2>
+      <p className="mb-2 text-gray-600">
+        Logged in as: <strong>{user?.name || "Unknown"}</strong> | Role:{" "}
+        <strong>{userRole}</strong> | Department:{" "}
+        <strong>{user?.department?.name || "N/A"}</strong>
+      </p>
 
-      {/* Header */}
-      <div
-        style={{
-          background: "white",
-          borderRadius: "12px",
-          padding: "20px",
-          marginBottom: "20px",
-          boxShadow: "0 3px 12px rgba(0, 0, 0, 0.06)",
-          border: "1px solid #e9ecef",
-          textAlign: "center",
-        }}
-      >
-        <h1 style={{ color: "#2c3e50", marginBottom: "8px", fontSize: "22px" }}>
-          📝 New Assessment
-        </h1>
-        <p style={{ color: "#7f8c8d", fontSize: "14px" }}>
-          Review uploaded documents, mark for verification, approve or reject.
-        </p>
-      </div>
-
-      {/* Responsive Table Container */}
-      <div style={{ overflowX: "auto" }}>
-        <table
-          style={{
-            width: "100%",
-            minWidth: "600px",
-            borderCollapse: "collapse",
-            background: "white",
-            borderRadius: "10px",
-            overflow: "hidden",
-            boxShadow: "0 3px 12px rgba(0,0,0,0.06)",
-          }}
-        >
-          <thead>
-            <tr>
-              <th style={thStyle}>Sl.No</th>
-              <th style={thStyle}>Document Name</th>
-              <th style={thStyle}>Uploaded Date</th>
-              <th style={thStyle}>Status</th>
-              <th style={thStyle}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentDocuments.length === 0 ? (
-              <tr>
-                <td colSpan="5" style={{ textAlign: "center", padding: "12px" }}>
-                  No documents found
+      <table className="table-auto w-full border-collapse border border-gray-300 text-sm">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border p-2 w-48">Clause / Control</th>
+            <th className="border p-2 w-72">Question</th>
+            <th className="border p-2 w-40">Document Evidence</th>
+            <th className="border p-2 w-60">Practice Evidence</th>
+            <th className="border p-2 w-28">Doc Score</th>
+            <th className="border p-2 w-28">Practice Score</th>
+            <th className="border p-2 w-52">Doc Remarks</th>
+            <th className="border p-2 w-52">Practice Remarks</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.keys(grouped).map((clause, i) => (
+            <React.Fragment key={i}>
+              <tr className="bg-blue-50">
+                <td className="border p-2 font-semibold" colSpan="8">
+                  <div className="font-semibold">{clause}</div>
+                  <div className="text-gray-700 text-sm mt-1">
+                    {grouped[clause][0].standardRequirement}
+                  </div>
                 </td>
               </tr>
-            ) : (
-              currentDocuments.map((doc, index) => (
-                <tr key={doc.id}>
-                  <td style={tdStyle}>{indexOfFirstDoc + index + 1}</td>
-                  <td style={tdStyle}>{doc.name || "Unnamed Document"}</td>
-                  <td style={tdStyle}>
-                    {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : "N/A"}
+
+              {grouped[clause].map((row) => (
+                <tr key={row.idx}>
+                  <td className="border p-2"></td>
+                  <td className="border p-2">{row.question}</td>
+
+                  {/* Document Evidence */}
+                  <td className="border p-2 flex items-center gap-2">
+                    {userRole !== "auditor" && (
+                      <label className="flex items-center gap-1 cursor-pointer bg-gray-200 px-2 py-1 rounded text-xs">
+                        <Upload size={14} /> Upload
+                        <input
+                          type="file"
+                          className="hidden"
+                          onChange={(e) =>
+                            handleFileChange(row.idx, e.target.files[0])
+                          }
+                        />
+                      </label>
+                    )}
+                    {row.documentEvidence && (
+                      <button
+                        onClick={() => setSelectedDoc(row.documentEvidence)}
+                        className="flex items-center gap-1 px-2 py-1 bg-blue-500 text-white rounded text-xs"
+                      >
+                        <Eye size={14} /> View
+                      </button>
+                    )}
                   </td>
-                  <td style={tdStyle}>
-                    <span
-                      style={{
-                        padding: "4px 8px",
-                        borderRadius: "6px",
-                        background: gaps[doc.id]?.startsWith("Score")
-                          ? "#2980b9"
-                          : gaps[doc.id] === "Closed"
-                          ? "#2ecc71"
-                          : gaps[doc.id] === "Pending" || gaps[doc.id] === "Checking..."
-                          ? "#f39c12"
-                          : gaps[doc.id] === "Rejected"
-                          ? "#e74c3c"
-                          : "#bdc3c7",
-                        color: "white",
-                        fontSize: "12px",
-                      }}
-                    >
-                      {gaps[doc.id] || "Open"}
-                    </span>
+
+                  {/* Practice Evidence */}
+                  <td className="border p-2">
+                    {userRole !== "auditor" ? (
+                      <textarea
+                        className="w-full border rounded p-1"
+                        rows="2"
+                        value={row.practiceEvidence}
+                        onChange={(e) =>
+                          handleInputChange(
+                            row.idx,
+                            "practiceEvidence",
+                            e.target.value
+                          )
+                        }
+                        onBlur={() => handlePracticeBlur(row.idx)}
+                      />
+                    ) : (
+                      <span>{row.practiceEvidence}</span>
+                    )}
                   </td>
-                  <td style={tdStyle}>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "8px",
-                        justifyContent: "flex-start",
-                        alignItems: "center",
-                      }}
-                    >
-                      <button
-                        onClick={() => handleMarkVerification(doc)}
-                        style={{ ...btnStyle("#f39c12"), minWidth: "70px", padding: "6px 10px" }}
+
+                  {/* Doc Score */}
+                  <td className="border p-2">
+                    {userRole === "auditor" ? (
+                      <select
+                        className="border rounded p-1"
+                        value={row.docScore}
+                        onChange={(e) =>
+                          handleAuditorChange(
+                            row.idx,
+                            "docScore",
+                            e.target.value
+                          )
+                        }
                       >
-                        Verify
-                      </button>
-                      <button
-                        onClick={() => setSelectedDoc(doc)}
-                        style={{ ...btnStyle("#3498db"), minWidth: "70px", padding: "6px 10px" }}
+                        <option value="">Select</option>
+                        <option value="0">0 - Not Available</option>
+                        <option value="1">1 - Partial</option>
+                        <option value="2">2 - Compliant</option>
+                      </select>
+                    ) : (
+                      <span>{row.docScore}</span>
+                    )}
+                  </td>
+
+                  {/* Practice Score */}
+                  <td className="border p-2">
+                    {userRole === "auditor" ? (
+                      <select
+                        className="border rounded p-1"
+                        value={row.practiceScore}
+                        onChange={(e) =>
+                          handleAuditorChange(
+                            row.idx,
+                            "practiceScore",
+                            e.target.value
+                          )
+                        }
                       >
-                        View
-                      </button>
-                      <button
-                        onClick={() => handleApprove(doc)}
-                        style={{ ...btnStyle("#2ecc71"), minWidth: "70px", padding: "6px 10px" }}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => handleReject(doc)}
-                        style={{ ...btnStyle("#e74c3c"), minWidth: "70px", padding: "6px 10px" }}
-                      >
-                        Reject
-                      </button>
-                    </div>
+                        <option value="">Select</option>
+                        <option value="0">0 - Not Practiced</option>
+                        <option value="1">1 - Partial</option>
+                        <option value="2">2 - Fully Practiced</option>
+                      </select>
+                    ) : (
+                      <span>{row.practiceScore}</span>
+                    )}
+                  </td>
+
+                  {/* Doc Remarks */}
+                  <td className="border p-2">
+                    {userRole === "auditor" ? (
+                      <textarea
+                        className="w-full border rounded p-1"
+                        rows="2"
+                        value={row.docRemarks}
+                        onChange={(e) =>
+                          handleAuditorChange(
+                            row.idx,
+                            "docRemarks",
+                            e.target.value
+                          )
+                        }
+                      />
+                    ) : (
+                      <span>{row.docRemarks}</span>
+                    )}
+                  </td>
+
+                  {/* Practice Remarks */}
+                  <td className="border p-2">
+                    {userRole === "auditor" ? (
+                      <textarea
+                        className="w-full border rounded p-1"
+                        rows="2"
+                        value={row.practiceRemarks}
+                        onChange={(e) =>
+                          handleAuditorChange(
+                            row.idx,
+                            "practiceRemarks",
+                            e.target.value
+                          )
+                        }
+                      />
+                    ) : (
+                      <span>{row.practiceRemarks}</span>
+                    )}
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </React.Fragment>
+          ))}
+        </tbody>
+      </table>
 
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            marginTop: "20px",
-            gap: "8px",
-            flexWrap: "wrap",
-          }}
-        >
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            style={{
-              padding: "8px 14px",
-              borderRadius: "6px",
-              border: "1px solid #3498db",
-              margin: "0 4px",
-              cursor: currentPage === 1 ? "not-allowed" : "pointer",
-              fontWeight: "600",
-              backgroundColor: currentPage === 1 ? "#e9ecef" : "white",
-              color: currentPage === 1 ? "#6c757d" : "#3498db",
-              userSelect: "none",
-              transition: "all 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              if (currentPage !== 1) {
-                e.target.style.backgroundColor = "#0056b3";
-                e.target.style.color = "white";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (currentPage !== 1) {
-                e.target.style.backgroundColor = "white";
-                e.target.style.color = "#3498db";
-              }
-            }}
-          >
-            ← Prev
-          </button>
-          {[...Array(totalPages).keys()].map((num) => {
-            const pageNum = num + 1;
-            const isActive = pageNum === currentPage;
-            return (
-              <button
-                key={pageNum}
-                onClick={() => paginate(pageNum)}
-                disabled={isActive}
-                style={{
-                  padding: "8px 14px",
-                  borderRadius: "6px",
-                  border: "1px solid #3498db",
-                  margin: "0 4px",
-                  cursor: isActive ? "default" : "pointer",
-                  fontWeight: "600",
-                  backgroundColor: isActive ? "#3498db" : "white",
-                  color: isActive ? "white" : "#3498db",
-                  userSelect: "none",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.target.style.backgroundColor = "#e7f1ff";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.target.style.backgroundColor = "white";
-                  }
-                }}
-              >
-                {pageNum}
-              </button>
-            );
-          })}
-          <button
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-            style={{
-              padding: "8px 14px",
-              borderRadius: "6px",
-              border: "1px solid #3498db",
-              margin: "0 4px",
-              cursor: currentPage === totalPages ? "not-allowed" : "pointer",
-              fontWeight: "600",
-              backgroundColor: currentPage === totalPages ? "#e9ecef" : "white",
-              color: currentPage === totalPages ? "#6c757d" : "#3498db",
-              userSelect: "none",
-              transition: "all 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              if (currentPage !== totalPages) {
-                e.target.style.backgroundColor = "#0056b3";
-                e.target.style.color = "white";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (currentPage !== totalPages) {
-                e.target.style.backgroundColor = "white";
-                e.target.style.color = "#3498db";
-              }
-            }}
-          >
-            Next →
-          </button>
-        </div>
-      )}
-
-      {/* Modal for Viewing Document */}
+      {/* Modal for viewing uploaded document */}
       {selectedDoc && (
-        <div style={modalOverlay} onClick={() => setSelectedDoc(null)}>
-          <div style={modalBox} onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ marginBottom: "15px" }}>{selectedDoc.name}</h2>
+        <div
+          className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50"
+          onClick={() => setSelectedDoc(null)}
+        >
+          <div
+            className="bg-white rounded-lg p-4 w-4/5 max-w-3xl relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-semibold text-lg">Uploaded Document</h3>
+              <button
+                onClick={() => setSelectedDoc(null)}
+                className="text-red-500"
+              >
+                <X size={20} />
+              </button>
+            </div>
             <iframe
-              src={`https://cftoolbackend.duckdns.org${selectedDoc.url}`}
-              style={{
-                width: "100%",
-                height: "500px",
-                border: "1px solid #e9ecef",
-                borderRadius: "8px",
-              }}
+              src={`http://localhost:4000${selectedDoc}`}
+              className="w-full h-96 border rounded"
               title="Document Preview"
             />
-            <button onClick={() => setSelectedDoc(null)} style={btnStyle("#e74c3c")}>
-              Close
-            </button>
           </div>
         </div>
       )}
     </div>
   );
-};
-
-const thStyle = {
-  padding: "12px",
-  borderBottom: "1px solid #e9ecef",
-  background: "#f8f9fa",
-};
-
-const tdStyle = {
-  padding: "12px",
-  borderBottom: "1px solid #e9ecef",
-};
-
-const btnStyle = (bgColor) => ({
-  padding: "6px 12px",
-  marginRight: "8px",
-  borderRadius: "6px",
-  background: bgColor,
-  color: "white",
-  border: "none",
-  cursor: "pointer",
-});
-
-const modalOverlay = {
-  position: "fixed",
-  top: 0,
-  left: 0,
-  width: "100%",
-  height: "100%",
-  background: "rgba(0, 0, 0, 0.6)",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  zIndex: 1000,
-};
-
-const modalBox = {
-  background: "white",
-  borderRadius: "12px",
-  padding: "20px",
-  width: "80%",
-  maxWidth: "700px",
-  boxShadow: "0 3px 12px rgba(0,0,0,0.2)",
-  position: "relative",
 };
 
 export default NewAssessment;

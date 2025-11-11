@@ -155,28 +155,24 @@ const HamburgerMenu = () => {
       <nav style={menuStyle}>
         <div style={menuHeaderStyle}>
           <h3 style={{ margin: 0, fontSize: 18 }}>SafeSphere</h3>
-          <button style={closeButtonStyle} onClick={closeMenu} title="Close menu">
+          <button
+            style={closeButtonStyle}
+            onClick={closeMenu}
+            title="Close menu"
+          >
             &times;
           </button>
         </div>
-   
 
-
-       
-          {/* HOME OPTION */}
-          <div
-            style={menuItemStyle}
-            onClick={() => handleNavigation("/")}
-            onMouseEnter={(e) => (e.target.style.backgroundColor = "#f8f9fa")}
-            onMouseLeave={(e) =>
-              (e.target.style.backgroundColor = "transparent")
-            }
-          >
-            🏠 Home
-          </div>
-
-
-
+        {/* HOME OPTION */}
+        <div
+          style={menuItemStyle}
+          onClick={() => handleNavigation("/")}
+          onMouseEnter={(e) => (e.target.style.backgroundColor = "#f8f9fa")}
+          onMouseLeave={(e) => (e.target.style.backgroundColor = "transparent")}
+        >
+          🏠 Home
+        </div>
 
         <div style={{ padding: "5px 0", flexGrow: 1 }}>
           <div
@@ -212,12 +208,19 @@ const HamburgerMenu = () => {
 
           {user && (
             <div style={userInfoContainerStyle}>
-              <div>{user.name},{user.department.name}</div>
+              <div>
+                {user.name},{" "}
+                {user.department?.name ? user.department.name : user.role}
+              </div>
               <button
                 onClick={handleLogout}
                 style={logoutButtonStyle}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#c0392b")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#e74c3c")}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#c0392b")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.backgroundColor = "#e74c3c")
+                }
                 title="Logout"
               >
                 Logout

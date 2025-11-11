@@ -1,50 +1,63 @@
-// src/gap/services/gapService.js
-import axios from "axios";
-
-const BASE_URL = "https://cftoolbackend.duckdns.org/api/gaps";
+const API_URL = "http://localhost:4000/api/gaps";
 
 const gapService = {
-  async getGaps() {
+  uploadFile: async (file) => {
+    if (!file) throw new Error("No file provided");
+    console.log("Uploading file:", file.name, file.size);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
     try {
-      const res = await axios.get(BASE_URL);
-      return res.data;
-    } catch (error) {
-      console.error("Error fetching gaps:", error);
+      const res = await fetch(`${API_URL}/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      console.log("Upload response:", data);
+      if (!res.ok) throw new Error(data.message || "Upload failed");
+      return data.url;
+    } catch (err) {
+      console.error("Upload failed:", err);
+      throw err;
+    }
+  },
+
+  saveEntry: async (entry) => {
+    try {
+      const res = await fetch(`${API_URL}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(entry),
+      });
+      return await res.json();
+    } catch (err) {
+      console.error("Save entry failed", err);
+      throw err;
+    }
+  },
+
+  getGaps: async () => {
+    try {
+      const res = await fetch(`${API_URL}`);
+      return await res.json();
+    } catch (err) {
+      console.error("Fetching gaps failed", err);
       return [];
     }
   },
 
-  async createGap(docId, data) {
+  updateEntry: async (id, update) => {
     try {
-      const res = await axios.post(BASE_URL, { docId, ...data });
-      return res.data;
-    } catch (error) {
-      console.error("Error creating gap:", error);
-      throw error;
-    }
-  },
-
-  async updateGap(docId, data) {
-    try {
-      const res = await axios.patch(`${BASE_URL}/${docId}`, data);
-      return res.data;
-    } catch (error) {
-      // Auto-create if not found
-      if (error.response?.status === 404) {
-        console.warn(`Gap not found for docId ${docId}, creating new entry...`);
-        return await this.createGap(docId, data);
-      }
-      console.error(`Error updating gap for docId ${docId}:`, error);
-      throw error;
-    }
-  },
-  async checkCompliance(docId) {
-    try {
-      const res = await axios.post(`${BASE_URL}/${docId}/check-compliance`);
-      return res.data; // e.g. { score: 85 }
-    } catch (error) {
-      console.error(`Error checking compliance for docId ${docId}:`, error);
-      throw error;
+      const res = await fetch(`${API_URL}/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(update),
+      });
+      return await res.json();
+    } catch (err) {
+      console.error("Update entry failed", err);
+      throw err;
     }
   },
 };
