@@ -1156,3 +1156,12 @@ export const ISO_27001_CONTROL = [
     departments: ["IT Infra", "IT Applications"],
   },
 ];
+
+
+const uniqueDepartments1 = [...new Set(ISO_27001_CLAUSES.map(item => item.department))];
+
+
+const uniqueDepartments2 = [...new Set(ISO_27001_CONTROL.map(item => item.departments))];
+
+const allUniqueDepartments = [...new Set([...uniqueDepartments1, ...uniqueDepartments2].flat())];
+console.log("All Unique Departments:", allUniqueDepartments);
