@@ -26,14 +26,22 @@ const SoaPage = () => {
         const soaEntries = await documentationService.getSoAEntries();
 
         const controlsWithRefs = storedControls.map((control) => {
-          const soaEntry = soaEntries.find((e) => e.controlId === control.id);
-          const docRefs = DOCUMENT_MAPPING[String(control.category)] || ["N/A"];
+          // get all SoA entries for this control
+          const soaEntriesForControl = soaEntries.filter(
+            (e) => e.controlId === control.id
+          );
+
+          // flatten all documentRefs from all entries
+          const documentRefs = soaEntriesForControl.flatMap(
+            (e) => e.documentRef
+          );
 
           return {
             ...control,
-            status: soaEntry?.status || "Planned",
-            documentRef: soaEntry?.documentRef || docRefs,
-            justification: soaEntry?.justification || "Risk Identified",
+            status: soaEntriesForControl[0]?.status || "Planned", // or handle multiple statuses
+            justification:
+              soaEntriesForControl[0]?.justification || "Risk Identified",
+            documentRef: documentRefs.length > 0 ? documentRefs : ["N/A"],
           };
         });
 
@@ -48,7 +56,10 @@ const SoaPage = () => {
   // Pagination logic
   const indexOfLastControl = currentPage * controlsPerPage;
   const indexOfFirstControl = indexOfLastControl - controlsPerPage;
-  const currentControls = controls.slice(indexOfFirstControl, indexOfLastControl);
+  const currentControls = controls.slice(
+    indexOfFirstControl,
+    indexOfLastControl
+  );
   const totalPages = Math.ceil(controls.length / controlsPerPage);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
@@ -67,12 +78,30 @@ const SoaPage = () => {
       const existingEntry = existingEntries.find((e) => e.controlId === id);
 
       if (existingEntry) {
-        await documentationService.updateSoAEntry(existingEntry.id, {
-          status: newStatus,
-          documentRef: control.documentRef,
-          justification: control.justification,
-          updatedAt: new Date().toISOString(),
-        });
+        for (const doc of control.documentRef) {
+          const existingEntryForDoc = existingEntries.find(
+            (e) => e.controlId === control.id && e.documentRef[0] === doc
+          );
+
+          if (existingEntryForDoc) {
+            await documentationService.updateSoAEntry(existingEntryForDoc.id, {
+              status: control.status,
+              documentRef: [doc],
+              justification: control.justification,
+              updatedAt: new Date().toISOString(),
+            });
+          } else {
+            await documentationService.addSoAEntry({
+              controlId: control.id,
+              category: control.category,
+              description: control.description,
+              status: control.status,
+              documentRef: [doc],
+              justification: control.justification,
+              createdAt: new Date().toISOString(),
+            });
+          }
+        }
       }
     } catch (error) {
       console.error("Error updating SoA entry:", error);
@@ -209,7 +238,7 @@ const SoaPage = () => {
           <thead>
             <tr style={{ backgroundColor: "#f8f9fa" }}>
               <th style={{ border: "1px solid #dee2e6", padding: "10px" }}>
-                Sl.no 
+                Sl.no
               </th>
               <th style={{ border: "1px solid #dee2e6", padding: "10px" }}>
                 Control
@@ -229,66 +258,67 @@ const SoaPage = () => {
             </tr>
           </thead>
           <tbody>
-            {currentControls.map((control, index) => (
-              <tr key={control.id}>
-                <td style={{ border: "1px solid #dee2e6", padding: "10px" }}>
-                  {indexOfFirstControl + index + 1}
-                </td>
-                <td style={{ border: "1px solid #dee2e6", padding: "10px" }}>
-                  {control.category}
-                </td>
-                <td style={{ border: "1px solid #dee2e6", padding: "10px" }}>
-                  {control.description}
-                </td>
-                <td
-                  style={{
-                    border: "1px solid #dee2e6",
-                    padding: "10px",
-                    whiteSpace: "pre-line",
-                  }}
-                >
-                  {control.documentRef.join("\n")}
-                </td>
-                <td style={{ border: "1px solid #dee2e6", padding: "10px" }}>
-                  <select
-                    value={control.justification}
-                    onChange={(e) =>
-                      handleJustificationChange(control.id, e.target.value)
-                    }
-                    style={{
-                      padding: "5px",
-                      borderRadius: "6px",
-                      border: "1px solid #ccc",
-                    }}
-                  >
-                    {JUSTIFICATION_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td style={{ border: "1px solid #dee2e6", padding: "10px" }}>
-                  <select
-                    value={control.status}
-                    onChange={(e) =>
-                      handleStatusChange(control.id, e.target.value)
-                    }
-                    style={{
-                      padding: "5px",
-                      borderRadius: "6px",
-                      border: "1px solid #ccc",
-                    }}
-                  >
-                    {STATUS_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-              </tr>
-            ))}
+            {(() => {
+              let rowCounter = 0; // Declare here inside an IIFE
+              return currentControls.flatMap((control) =>
+                control.documentRef.map((doc, docIndex) => {
+                  rowCounter++;
+                  return (
+                    <tr key={`${control.id}-${docIndex}`}>
+                      {docIndex === 0 && (
+                        <>
+                          <td rowSpan={control.documentRef.length}>
+                            {rowCounter}
+                          </td>
+                          <td rowSpan={control.documentRef.length}>
+                            {control.category}
+                          </td>
+                          <td rowSpan={control.documentRef.length}>
+                            {control.description}
+                          </td>
+                        </>
+                      )}
+                      <td>{doc}</td>
+                      {docIndex === 0 && (
+                        <>
+                          <td rowSpan={control.documentRef.length}>
+                            <select
+                              value={control.justification}
+                              onChange={(e) =>
+                                handleJustificationChange(
+                                  control.id,
+                                  e.target.value
+                                )
+                              }
+                            >
+                              {JUSTIFICATION_OPTIONS.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td rowSpan={control.documentRef.length}>
+                            <select
+                              value={control.status}
+                              onChange={(e) =>
+                                handleStatusChange(control.id, e.target.value)
+                              }
+                            >
+                              {STATUS_OPTIONS.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                        </>
+                      )}
+                    </tr>
+                  );
+                })
+              );
+            })()}
           </tbody>
         </table>
 
@@ -346,120 +376,82 @@ const SoaPage = () => {
               Next →
             </button>
           </div>
-
-
-
         )}
 
-
-
-        
-
+        <div
+          style={{
+            position: "fixed",
+            bottom: "30px",
+            left: "30px",
+            zIndex: 100,
+          }}
+        >
+          <button
+            onClick={() => history.push("/documentation/mld")}
+            style={{
+              width: "60px",
+              height: "60px",
+              borderRadius: "50%",
+              background: "linear-gradient(45deg, #3498db, #2980b9)",
+              color: "white",
+              border: "none",
+              fontSize: "24px",
+              cursor: "pointer",
+              boxShadow: "0 4px 15px rgba(52, 152, 219, 0.3)",
+              transition: "all 0.3s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = "scale(1.1)";
+              e.target.style.boxShadow = "0 6px 20px rgba(52, 152, 219, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = "scale(1)";
+              e.target.style.boxShadow = "0 4px 15px rgba(52, 152, 219, 0.3)";
+            }}
+            title="Go to MLD"
+          >
+            MLD
+          </button>
+        </div>
 
         <div
-        style={{
-          position: "fixed",
-          bottom: "30px",
-          left: "30px",
-          zIndex: 100,
-        }}
-      >
-        <button
-          onClick={() => history.push("/documentation/mld")}
           style={{
-            width: "60px",
-            height: "60px",
-            borderRadius: "50%",
-            background: "linear-gradient(45deg, #3498db, #2980b9)",
-            color: "white",
-            border: "none",
-            fontSize: "24px",
-            cursor: "pointer",
-            boxShadow: "0 4px 15px rgba(52, 152, 219, 0.3)",
-            transition: "all 0.3s ease",
+            position: "fixed",
+            bottom: "30px",
+            right: "30px",
+            zIndex: 100,
           }}
-          onMouseEnter={(e) => {
-            e.target.style.transform = "scale(1.1)";
-            e.target.style.boxShadow = "0 6px 20px rgba(52, 152, 219, 0.4)";
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = "scale(1)";
-            e.target.style.boxShadow = "0 4px 15px rgba(52, 152, 219, 0.3)";
-          }}
-          title="Go to MLD"
         >
-          MLD
-        </button>
-      </div>
-
-
-
-
-
-
-
-
-
-      
-        <div
-        style={{
-          position: "fixed",
-          bottom: "30px",
-          right: "30px",
-          zIndex: 100,
-        }}
-      >
-        <button
-          onClick={() => history.push("/risk-assessment/saved")}
-          style={{
-            width: "60px",
-            height: "60px",
-            borderRadius: "50%",
-            background: "linear-gradient(45deg, #3498db, #2980b9)",
-            color: "white",
-            border: "none",
-            fontSize: "24px",
-            cursor: "pointer",
-            boxShadow: "0 4px 15px rgba(52, 152, 219, 0.3)",
-            transition: "all 0.3s ease",
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.transform = "scale(1.1)";
-            e.target.style.boxShadow = "0 6px 20px rgba(52, 152, 219, 0.4)";
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = "scale(1)";
-            e.target.style.boxShadow = "0 4px 15px rgba(52, 152, 219, 0.3)";
-          }}
-          title="Go to MLD"
-        >
-          📁
-        </button>
-      </div>
+          <button
+            onClick={() => history.push("/risk-assessment/saved")}
+            style={{
+              width: "60px",
+              height: "60px",
+              borderRadius: "50%",
+              background: "linear-gradient(45deg, #3498db, #2980b9)",
+              color: "white",
+              border: "none",
+              fontSize: "24px",
+              cursor: "pointer",
+              boxShadow: "0 4px 15px rgba(52, 152, 219, 0.3)",
+              transition: "all 0.3s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = "scale(1.1)";
+              e.target.style.boxShadow = "0 6px 20px rgba(52, 152, 219, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = "scale(1)";
+              e.target.style.boxShadow = "0 4px 15px rgba(52, 152, 219, 0.3)";
+            }}
+            title="Go to MLD"
+          >
+            📁
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
 export default SoaPage;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -10,6 +10,12 @@ const MyTasks = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const STATUS = {
+    PENDING: "Pending",
+    COMPLETED_PENDING: "Completed (Pending Approval)",
+    APPROVED: "Approved",
+  };
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -45,6 +51,25 @@ const MyTasks = () => {
     }
     return () => (mounted = false);
   }, [user]);
+
+  const markTaskComplete = async (taskId) => {
+    const taskToUpdate = tasks.find((t) => t.taskId === taskId);
+    if (!taskToUpdate) return;
+
+    const updatedTask = {
+      ...taskToUpdate,
+      status: STATUS.COMPLETED_PENDING, // regular users mark as "Completed (Pending Approval)"
+    };
+
+    try {
+      await taskService.updateTask(taskId, updatedTask);
+      setTasks((prev) =>
+        prev.map((t) => (t.taskId === taskId ? updatedTask : t))
+      );
+    } catch (err) {
+      console.error("Failed to update task status:", err);
+    }
+  };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "—";
@@ -122,11 +147,6 @@ const MyTasks = () => {
     overflow: "hidden",
   };
 
-  const theadStyle = {
-    background: "#f4f6f8",
-    borderBottom: "2px solid #ddd",
-  };
-
   const thStyle = {
     padding: "12px",
     textAlign: "left",
@@ -143,24 +163,17 @@ const MyTasks = () => {
     fontSize: "14px",
   };
 
-  const emptyStyle = {
-    textAlign: "center",
-    padding: "40px",
-    color: "#7f8c8d",
-    fontSize: "16px",
-  };
-
   const statusBadgeStyle = (status) => {
     let bgColor = "#e9ecef";
     let textColor = "#495057";
 
-    if (status === "Pending") {
+    if (status === STATUS.PENDING) {
       bgColor = "#fff3cd";
       textColor = "#856404";
-    } else if (status === "Completed (Pending Approval)") {
+    } else if (status === STATUS.COMPLETED_PENDING) {
       bgColor = "#cfe2ff";
       textColor = "#084298";
-    } else if (status === "Approved") {
+    } else if (status === STATUS.APPROVED) {
       bgColor = "#d1e7dd";
       textColor = "#0f5132";
     }
@@ -176,10 +189,21 @@ const MyTasks = () => {
     };
   };
 
+  const buttonStyle = {
+    minWidth: "60px",
+    padding: "4px 8px",
+    borderRadius: "5px",
+    border: "none",
+    fontSize: "13px",
+    color: "#fff",
+    cursor: "pointer",
+    marginLeft: "5px",
+  };
+
   if (!user) {
     return (
       <div style={pageStyle}>
-        <div style={emptyStyle}>
+        <div style={{ textAlign: "center", padding: "40px", color: "#7f8c8d" }}>
           <p>Please log in to view your assigned tasks.</p>
         </div>
       </div>
@@ -188,7 +212,6 @@ const MyTasks = () => {
 
   return (
     <>
-      {/* Back to Dashboard Button */}
       <button
         style={backBtnStyle}
         onClick={() => history.push("/risk-assessment")}
@@ -199,23 +222,24 @@ const MyTasks = () => {
       </button>
 
       <div style={pageStyle}>
-        {/* Header */}
         <div style={headerStyle}>
           <h1 style={titleStyle}>✅ My Tasks</h1>
           <p style={subtitleStyle}>View all tasks assigned to you</p>
         </div>
 
-        {/* Tasks Table */}
         {tasks.length === 0 ? (
-          <div style={emptyStyle}>No tasks assigned to you yet.</div>
+          <div style={{ textAlign: "center", padding: "40px", color: "#7f8c8d" }}>
+            No tasks assigned to you yet.
+          </div>
         ) : (
           <table style={tableStyle}>
-            <thead style={theadStyle}>
+            <thead>
               <tr>
                 <th style={thStyle}>Description</th>
                 <th style={thStyle}>Start Date</th>
                 <th style={thStyle}>End Date</th>
                 <th style={thStyle}>Status</th>
+                <th style={thStyle}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -230,6 +254,20 @@ const MyTasks = () => {
                   </td>
                   <td style={tdStyle}>
                     <span style={statusBadgeStyle(task.status)}>{task.status || "—"}</span>
+                  </td>
+                  <td style={tdStyle}>
+                    {task.status === STATUS.PENDING &&
+                      String(task.employee) === String(user._id || user.id) && (
+                        <button
+                          style={{ ...buttonStyle, background: "#2ecc71" }}
+                          onClick={() => markTaskComplete(task.taskId)}
+                        >
+                          ✅ Mark Complete
+                        </button>
+                      )}
+
+                    {task.status === STATUS.COMPLETED_PENDING && <span>✅ Waiting for approval</span>}
+                    {task.status === STATUS.APPROVED && <span>✅ Approved</span>}
                   </td>
                 </tr>
               ))}

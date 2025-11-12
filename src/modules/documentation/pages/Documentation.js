@@ -11,6 +11,19 @@ const Documentation = () => {
     withoutControls: 0,
   });
 
+
+
+
+  // User and role loaded once
+  const user = JSON.parse(sessionStorage.getItem("user"));
+  const role = user?.role || "";
+
+
+
+
+
+
+
   useEffect(() => {
     loadControlStats();
   }, []);
@@ -146,60 +159,68 @@ const Documentation = () => {
       </div>
 
       {/* Quick Actions */}
-      <div style={actionsStyle}>
-        <div
-          style={{
-            ...actionCardStyle,
-            background: "linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%)",
-            color: "white",
-          }}
-          onClick={() => history.push("/documentation/soa")}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-3px)")}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
-        >
-          <FileSpreadsheet style={iconStyle} />
-          <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>Generate SoA</h3>
-          <p style={{ margin: 0, fontSize: "13px", opacity: 0.9 }}>
-            Automatically create Statement of Applicability from controls
-          </p>
-        </div>
-
-        <div
-          style={{
-            ...actionCardStyle,
-            background: "linear-gradient(135deg, #f39c12 0%, #d35400 100%)",
-            color: "white",
-          }}
-          onClick={() => history.push("/documentation/controls")}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-3px)")}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
-        >
-          <Shield style={iconStyle} />
-          <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>Control Library</h3>
-          <p style={{ margin: 0, fontSize: "13px", opacity: 0.9 }}>
-            Browse and manage security controls
-          </p>
-        </div>
-
-        <div
-          style={{
-            ...actionCardStyle,
-            background: "linear-gradient(135deg, #3498db 0%, #2980b9 100%)",
-            color: "white",
-          }}
-          onClick={() => history.push("/documentation/mld")}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-3px)")}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
-        >
-          <BookOpen style={iconStyle} />
-          <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>MLD</h3>
-          <p style={{ margin: 0, fontSize: "13px", opacity: 0.9 }}>
-            Master List of Documents
-          </p>
-        </div>
+<div style={actionsStyle}>
+  {/* Only Super Admin Actions */}
+  {role === "super_admin" && (
+    <>
+      {/* SoA */}
+      <div
+        style={{
+          ...actionCardStyle,
+          background: "linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%)",
+          color: "white",
+        }}
+        onClick={() => history.push("/documentation/soa")}
+        onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-3px)")}
+        onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+      >
+        <FileSpreadsheet style={iconStyle} />
+        <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>Generate SoA</h3>
+        <p style={{ margin: 0, fontSize: "13px", opacity: 0.9 }}>
+          Automatically create Statement of Applicability from controls
+        </p>
       </div>
+
+      {/* Control Library */}
+      <div
+        style={{
+          ...actionCardStyle,
+          background: "linear-gradient(135deg, #f39c12 0%, #d35400 100%)",
+          color: "white",
+        }}
+        onClick={() => history.push("/documentation/controls")}
+        onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-3px)")}
+        onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+      >
+        <Shield style={iconStyle} />
+        <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>Control Library</h3>
+        <p style={{ margin: 0, fontSize: "13px", opacity: 0.9 }}>
+          Browse and manage security controls
+        </p>
+      </div>
+    </>
+  )}
+
+  {/* Accessible to all roles */}
+  <div
+    style={{
+      ...actionCardStyle,
+      background: "linear-gradient(135deg, #3498db 0%, #2980b9 100%)",
+      color: "white",
+    }}
+    onClick={() => history.push("/documentation/mld")}
+    onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-3px)")}
+    onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+  >
+    <BookOpen style={iconStyle} />
+    <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>MLD</h3>
+    <p style={{ margin: 0, fontSize: "13px", opacity: 0.9 }}>
+      Master List of Documents
+    </p>
+  </div>
+</div>
     </div>
   );
 };
-
 export default Documentation;
+

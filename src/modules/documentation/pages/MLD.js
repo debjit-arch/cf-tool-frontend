@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import ReMLDact, { useEffect, useState, useMemo } from "react";
 import { useHistory } from "react-router-dom";
 import documentationService from "../services/documentationService";
 import gapService from "../../gapAssessment/services/gapService";
@@ -198,6 +198,7 @@ const MLD = () => {
       )
     )
       return;
+
     try {
       const linkedDocs = documents.filter(
         (doc) => String(doc.soaId) === String(soaId)
@@ -210,6 +211,15 @@ const MLD = () => {
       // Remove deleted docs from state to update UI immediately
       const updatedDocs = documents.filter((doc) => !linkedDocs.includes(doc));
       setDocuments(updatedDocs);
+
+      // Recompute uploaded counts
+      const counts = {};
+      (soas || []).forEach((s) => (counts[s.id] = 0));
+      (updatedDocs || []).forEach((d) => {
+        const sid = d.soaId ?? d.soa?.id ?? d.soaIdString ?? null;
+        if (sid != null) counts[sid] = (counts[sid] ?? 0) + 1;
+      });
+      setUploadedCounts(counts);
 
       // Optionally clear selected files for this SoA
       setSelectedFiles((prev) => {
@@ -802,44 +812,58 @@ const MLD = () => {
                       >
                         {hasUploaded ? nextApprovalDate : "—"}
                       </td>
-                      {/* Upload File */}
-                      <td
-                        style={{
-                          padding: "12px 14px",
-                          textAlign: "center",
-                          verticalAlign: "middle",
-                        }}
-                      >
-                        <button
-                          onClick={() => handleSingleButtonUpload(soa.id)}
-                          disabled={uploading[soa.id]}
-                          style={{
-                            padding: "6px 12px",
-                            borderRadius: "6px",
-                            border: "none",
-                            background: "#3498db",
-                            color: "white",
-                            cursor: uploading[soa.id]
-                              ? "not-allowed"
-                              : "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: "6px",
-                            fontWeight: 600,
-                            minWidth: "80px",
-                          }}
-                          title="Upload document"
-                        >
-                          {uploading[soa.id] ? (
-                            "Uploading..."
-                          ) : (
-                            <>
-                              <UploadCloud size={16} /> Upload
-                            </>
-                          )}
-                        </button>
-                      </td>
+{/* Upload File */}
+<td
+  style={{
+    padding: "12px 14px",
+    textAlign: "center",
+    verticalAlign: "middle",
+  }}
+>
+  <button
+    onClick={() => handleSingleButtonUpload(soa.id)}
+    disabled={uploading[soa.id]}
+    style={{
+      padding: "6px 12px",
+      borderRadius: "6px",
+      border: "none",
+      background: "#3498db",
+      color: "white",
+      cursor: uploading[soa.id] ? "not-allowed" : "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "6px",
+      fontWeight: 600,
+      minWidth: "80px",
+    }}
+    title="Upload document"
+  >
+    {uploading[soa.id] ? (
+      "Uploading..."
+    ) : getUploadedCount(soa.id) > 0 ? (
+      <span
+        style={{
+          marginLeft: 6,
+          color: "#27ae60",
+          fontWeight: "700",
+          userSelect: "none",
+          fontSize: "18px",
+        }}
+        aria-label="Uploaded"
+        role="img"
+      >
+        ✅
+      </span>
+    ) : (
+      <>
+        <UploadCloud size={16} /> Upload
+      </>
+    )}
+  </button>
+</td>
+
+
 
                       {/* Approve Button */}
                       <td

@@ -39,14 +39,16 @@ const ControlsPage = () => {
       // Automatically create SoA entry
       const docRefs = DOCUMENT_MAPPING[newControl.category] || ["N/A"];
 
-      await documentationService.addSoAEntry({
-        controlId: addedControl.id,
-        category: addedControl.category,
-        description: addedControl.description,
-        status: "Planned",
-        documentRef: docRefs,
-        createdAt: new Date().toISOString(),
-      });
+      for (const doc of docRefs) {
+        await documentationService.addSoAEntry({
+          controlId: addedControl.id,
+          category: addedControl.category,
+          description: addedControl.description,
+          status: "Planned",
+          documentRef: [doc], // save single document per entry
+          createdAt: new Date().toISOString(),
+        });
+      }
 
       setControls([...controls, addedControl]);
       setNewControl({ category: "", description: "" });
@@ -366,29 +368,3 @@ const ControlsPage = () => {
 };
 
 export default ControlsPage;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

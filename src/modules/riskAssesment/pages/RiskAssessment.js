@@ -63,7 +63,7 @@ const RiskAssessment = () => {
       const departmentRisks = risks.filter(
         (risk) => risk.department === user.department?.name
       );
-
+      
       const stats = departmentRisks.reduce(
         (acc, risk) => {
           acc.total++;
@@ -335,7 +335,7 @@ const RiskAssessment = () => {
           </p>
         </div>
 
-        {(user.role === "risk_owner" || user.role === "risk_manager") && (
+        {(user.role === "risk_owner" || user.role === "risk_manager" ||user.role === "super_admin") && (
           <div
             style={actionCardStyle}
             onClick={() => history.push("/risk-assessment/saved")}

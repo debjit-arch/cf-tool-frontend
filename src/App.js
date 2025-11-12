@@ -74,14 +74,26 @@ function App() {
             <RoleBasedRoute
               path="/risk-assessment/saved"
               component={SavedRisksPage}
-              allowedRoles={["risk_owner", "risk_manager"]}
+              allowedRoles={["risk_owner", "risk_manager","super_admin" ]
+
+
+              }
             />
+              <RoleBasedRoute
+              path="/documentation/soa"
+              component={SoaPage}
+              allowedRoles={["super_admin"]
+
+                
+              }
+            />
+
             <ProtectedRoute path="/risk-assessment/templates" component={TemplatesPage} />
             {/* Route for the new My Tasks page */}
             <ProtectedRoute path="/risk-assessment/my-tasks" component={MyTasks} />
 
             <ProtectedRoute exact path="/documentation" component={Documentation} />
-            <ProtectedRoute path="/documentation/soa" component={SoaPage} />
+            {/* <ProtectedRoute path="/documentation/soa" component={SoaPage} /> */}
             <ProtectedRoute path="/documentation/controls" component={ControlsPage} />
             <ProtectedRoute path="/documentation/reports" component={ReportsPage} />
             <ProtectedRoute path="/documentation/settings" component={DocumentationSettingsPage} />

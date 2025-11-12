@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useHistory } from "react-router-dom";
 import {
@@ -7,6 +6,7 @@ import {
   Activity,
   LogIn,
   UserCircle2,
+  Lock,
 } from "lucide-react";
 
 const tiles = [
@@ -27,8 +27,7 @@ const tiles = [
   {
     label: "Gap Assessment",
     route: "/gap-assessment",
-    description:
-      "Evaluate gaps and enhance your ISMS controls continuously.",
+    description: "Evaluate gaps and enhance your ISMS controls continuously.",
     icon: <Activity className="w-12 h-12 text-indigo-600" />,
   },
 ];
@@ -81,9 +80,22 @@ const Dashboard = () => {
           <div className="flex items-center gap-2 bg-gradient-to-r from-indigo-50 to-blue-50 px-4 py-2 rounded-full shadow-sm border border-indigo-100">
             <UserCircle2 className="text-indigo-600 w-5 h-5" />
             <div className="flex flex-col text-sm">
-              <span className="font-semibold text-gray-800">{user.name || "User"}</span>
-              <span className="text-xs text-gray-500">{user.role || "Consultant"}</span>
+              <span className="font-semibold text-gray-800">
+                {user.name || "User"}
+              </span>
+              <span className="text-xs text-gray-500">
+                {user.role || "Consultant"}
+              </span>
             </div>
+            <button
+              onClick={() =>
+                (window.location.href =
+                  "https://main.d1jl1790poryf2.amplifyapp.com/change-password")
+              }
+              className="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 transition text-sm font-medium"
+            >
+              <Lock className="w-4 h-4" /> Change Password
+            </button>
           </div>
         </header>
 
@@ -114,7 +126,9 @@ const Dashboard = () => {
                   <h3 className="text-lg font-bold mb-3 text-gray-900">
                     {label}
                   </h3>
-                  <p className="text-gray-600 text-xs md:text-sm leading-relaxed">{description}</p>
+                  <p className="text-gray-600 text-xs md:text-sm leading-relaxed">
+                    {description}
+                  </p>
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-100 to-blue-100 opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
               </div>
@@ -127,7 +141,8 @@ const Dashboard = () => {
               Secure your business with SafeSphere
             </h3>
             <p className="text-sm md:text-base text-gray-700 mb-10 max-w-xl mx-auto">
-              Identify, analyze, and manage cybersecurity risks with ease using SafeSphere.
+              Identify, analyze, and manage cybersecurity risks with ease using
+              SafeSphere.
             </p>
 
             {/* Why Choose Section
@@ -187,10 +202,14 @@ const Dashboard = () => {
       {/* HERO SECTION */}
       <section className="text-center py-12 md:py-20 px-6">
         <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4">
-          Secure Your Business with <span className="bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">SafeSphere</span>
+          Secure Your Business with{" "}
+          <span className="bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
+            SafeSphere
+          </span>
         </h2>
         <p className="text-sm md:text-lg text-gray-600 max-w-2xl mx-auto mb-8">
-          SafeSphere helps you identify, analyze, and manage cybersecurity risks. Stay one step ahead of threats.
+          SafeSphere helps you identify, analyze, and manage cybersecurity
+          risks. Stay one step ahead of threats.
         </p>
         <button
           onClick={() => history.push("/login")}
@@ -238,7 +257,9 @@ const Dashboard = () => {
                 <h3 className="text-lg md:text-xl font-bold mb-3 text-gray-900">
                   {label}
                 </h3>
-                <p className="text-gray-600 text-xs md:text-sm leading-relaxed">{description}</p>
+                <p className="text-gray-600 text-xs md:text-sm leading-relaxed">
+                  {description}
+                </p>
               </div>
               <div className="absolute inset-0 bg-gradient-to-br from-indigo-100 to-blue-100 opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
             </div>
@@ -264,7 +285,8 @@ const Dashboard = () => {
 
       {/* FOOTER */}
       <footer className="py-4 text-center text-xs md:text-sm text-gray-500 border-t bg-white">
-        © {new Date().getFullYear()} SAFESPHERE · All rights reserved · Made in India
+        © {new Date().getFullYear()} SAFESPHERE · All rights reserved · Made in
+        India
       </footer>
     </div>
   );
