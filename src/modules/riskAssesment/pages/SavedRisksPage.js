@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useHistory } from "react-router-dom";
 import riskService from "../services/riskService";
@@ -16,47 +15,44 @@ const SavedRisksPage = () => {
   const [selectedRisk, setSelectedRisk] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-
-    const [redirectMessage, setRedirectMessage] = useState("");
-
+  const [redirectMessage, setRedirectMessage] = useState("");
 
   useEffect(() => {
     loadSavedRisks();
   }, []);
 
-const loadSavedRisks = async () => {
-  try {
-    setLoading(true);
-    const user = JSON.parse(sessionStorage.getItem("user"));
-    if (!user) return;
+  const loadSavedRisks = async () => {
+    try {
+      setLoading(true);
+      const user = JSON.parse(sessionStorage.getItem("user"));
+      if (!user) return;
 
-    const risks = await riskService.getAllRisks();
-    if (!Array.isArray(risks)) {
+      const risks = await riskService.getAllRisks();
+      if (!Array.isArray(risks)) {
+        setSavedRisks([]);
+        return;
+      }
+
+      let filteredRisks;
+
+      if (user.role === "super_admin") {
+        // Show all risks for super admins
+        filteredRisks = risks;
+      } else {
+        // Filter risks by user's department for other roles
+        const deptName = user.department?.name || "";
+        filteredRisks = risks.filter((risk) => risk.department === deptName);
+      }
+
+      setDepartmentName(user.department?.name || "All Departments");
+      setSavedRisks(filteredRisks);
+    } catch (error) {
+      console.error("Error loading risks:", error);
       setSavedRisks([]);
-      return;
+    } finally {
+      setLoading(false);
     }
-
-    let filteredRisks;
-
-    if (user.role === "super_admin") {
-      // Show all risks for super admins
-      filteredRisks = risks;
-    } else {
-      // Filter risks by user's department for other roles
-      const deptName = user.department?.name || "";
-      filteredRisks = risks.filter((risk) => risk.department === deptName);
-    }
-
-    setDepartmentName(user.department?.name || "All Departments");
-    setSavedRisks(filteredRisks);
-  } catch (error) {
-    console.error("Error loading risks:", error);
-    setSavedRisks([]);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   const handleEditRisk = (riskId) => {
     history.push("/risk-assessment/add", { editRiskId: riskId });
@@ -478,7 +474,8 @@ const loadSavedRisks = async () => {
                         setShowModal(true);
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = "rgba(52, 152, 219, 0.05)";
+                        e.currentTarget.style.background =
+                          "rgba(52, 152, 219, 0.05)";
                         e.currentTarget.style.color = "#3498db";
                       }}
                       onMouseLeave={(e) => {
@@ -542,7 +539,8 @@ const loadSavedRisks = async () => {
                           handleEditRisk(risk.riskId);
                         }}
                         style={{
-                          background: "linear-gradient(45deg, #3498db, #2980b9)",
+                          background:
+                            "linear-gradient(45deg, #3498db, #2980b9)",
                           color: "white",
                           border: "none",
                           padding: "8px 16px",
@@ -723,7 +721,8 @@ const loadSavedRisks = async () => {
                     <strong>Asset:</strong> {selectedRisk.location || "—"}
                   </p>
                   <p>
-                    <strong>Date:</strong> {formatDate(selectedRisk.date) || "—"}
+                    <strong>Date:</strong>{" "}
+                    {formatDate(selectedRisk.date) || "—"}
                   </p>
                 </div>
               </div>
@@ -766,15 +765,16 @@ const loadSavedRisks = async () => {
                     {selectedRisk.availability || "—"}
                   </p>
                   <p>
-                      <strong>Impact:</strong>{" "}
-  {Math.max(
-    parseInt(selectedRisk.confidentiality) || 0,
-    parseInt(selectedRisk.integrity) || 0,
-    parseInt(selectedRisk.availability) || 0
-  )}
-</p>
-<p>
-                    <strong>Likelihood:</strong> {selectedRisk.probability || "—"}
+                    <strong>Impact:</strong>{" "}
+                    {Math.max(
+                      parseInt(selectedRisk.confidentiality) || 0,
+                      parseInt(selectedRisk.integrity) || 0,
+                      parseInt(selectedRisk.availability) || 0
+                    )}
+                  </p>
+                  <p>
+                    <strong>Likelihood:</strong>{" "}
+                    {selectedRisk.probability || "—"}
                   </p>
                   <p>
                     <strong>Current Risk Score:</strong>{" "}
@@ -787,9 +787,7 @@ const loadSavedRisks = async () => {
                     <span
                       style={{
                         fontWeight: "700",
-                        ...getRiskLevelColor(
-                          calculateRiskLevel(selectedRisk)
-                        ),
+                        ...getRiskLevelColor(calculateRiskLevel(selectedRisk)),
                         padding: "4px 8px",
                         borderRadius: "4px",
                         display: "inline-block",
@@ -873,7 +871,8 @@ const loadSavedRisks = async () => {
                     {selectedRisk.treatmentStrategy || "—"}
                   </p>
                   <p>
-                    <strong>Response:</strong> {selectedRisk.riskResponse || "—"}
+                    <strong>Response:</strong>{" "}
+                    {selectedRisk.riskResponse || "—"}
                   </p>
                   <p>
                     <strong>Control Reference:</strong>{" "}
@@ -1031,7 +1030,8 @@ const loadSavedRisks = async () => {
                 }}
                 onMouseEnter={(e) => {
                   e.target.style.transform = "translateY(-1px)";
-                  e.target.style.boxShadow = "0 4px 12px rgba(52, 152, 219, 0.4)";
+                  e.target.style.boxShadow =
+                    "0 4px 12px rgba(52, 152, 219, 0.4)";
                 }}
                 onMouseLeave={(e) => {
                   e.target.style.transform = "translateY(0)";
@@ -1084,60 +1084,60 @@ const loadSavedRisks = async () => {
 
       {/* Generate SoA Button (Floating) */}
       {/* Generate SoA Button (Floating) */}
-<div
-  style={{
-    position: "fixed",
-    bottom: "30px",
-    right: "30px",
-    zIndex: 100,
-  }}
->
-  <button
-    onClick={async () => {
-      if (savedRisks.length === 0) {
-        alert("No risks available to generate SoA ❌");
-        return;
-      }
-
-      try {
-        for (const risk of savedRisks) {
-          if (risk.controlReference) {
-            let controlRefs = [];
-            if (Array.isArray(risk.controlReference)) {
-              controlRefs = risk.controlReference;
-            } else if (typeof risk.controlReference === "string") {
-              controlRefs = risk.controlReference
-                .split(",")
-                .map((ref) => ref.trim())
-                .filter((ref) => ref.length > 0);
+      <div
+        style={{
+          position: "fixed",
+          bottom: "30px",
+          right: "30px",
+          zIndex: 100,
+        }}
+      >
+        <button
+          onClick={async () => {
+            if (savedRisks.length === 0) {
+              alert("No risks available to generate SoA ❌");
+              return;
             }
 
-            const existingControls =
-              await documentationService.getControls();
-            const existingCategories = new Set(
-              existingControls.map((c) => c.category)
-            );
+            try {
+              for (const risk of savedRisks) {
+                if (risk.controlReference) {
+                  let controlRefs = [];
+                  if (Array.isArray(risk.controlReference)) {
+                    controlRefs = risk.controlReference;
+                  } else if (typeof risk.controlReference === "string") {
+                    controlRefs = risk.controlReference
+                      .split(",")
+                      .map((ref) => ref.trim())
+                      .filter((ref) => ref.length > 0);
+                  }
 
-            controlRefs = [...new Set(controlRefs)].sort(compareControls);
+                  const existingControls =
+                    await documentationService.getControls();
+                  const existingCategories = new Set(
+                    existingControls.map((c) => c.category)
+                  );
 
-            for (const ref of controlRefs) {
-              if (existingCategories.has(ref)) {
-                console.log(
-                  `⚠️ Control ${ref} already exists, skipping`
-                );
-                continue;
-              }
+                  controlRefs = [...new Set(controlRefs)].sort(compareControls);
 
-              const description =
-                CONTROL_MAPPING[ref] || "No description available";
+                  for (const ref of controlRefs) {
+                    if (existingCategories.has(ref)) {
+                      console.log(`⚠️ Control ${ref} already exists, skipping`);
+                      continue;
+                    }
 
-              const addedControl =
-                await documentationService.addControl({
-                  category: ref,
-                  description,
-                });
+                    const description =
+                      CONTROL_MAPPING[ref] || "No description available";
 
-              const docRefs = DOCUMENT_MAPPING[ref] || ["N/A"];
+                    const addedControl = await documentationService.addControl({
+                      category: ref,
+                      description,
+                    });
+
+                    const mapEntry = DOCUMENT_MAPPING[ref] || {};
+                    const docRefs = mapEntry.docs || ["N/A"];
+                    const type = mapEntry.type || "N/A";
+                    const dept = mapEntry.dept || "N/A";
 
                     for (const doc of docRefs) {
                       await documentationService.addSoAEntry({
@@ -1145,60 +1145,61 @@ const loadSavedRisks = async () => {
                         category: addedControl.category,
                         description: addedControl.description,
                         status: "Planned",
-                        documentRef: [doc], // single document per entry
+                        documentRef: [doc],
+                        type,
+                        dept,
                         createdAt: new Date().toISOString(),
                       });
                     }
+                  }
+                }
+              }
+
+              // Role-based redirect
+              const user = JSON.parse(sessionStorage.getItem("user"));
+              const role = user?.role || "";
+              if (role === "super_admin") {
+                setRedirectMessage(" Redirecting to Soa Page.");
+                history.push("/documentation/soa");
+              } else {
+                setRedirectMessage(
+                  "⚠️ You do not have permission to access SoA. Redirecting to master list of documents..."
+                );
+                setTimeout(() => {
+                  setRedirectMessage(""); // Clear after redirect
+                  history.push("/documentation/mld");
+                }, 2000);
+              }
+            } catch (error) {
+              console.error("Error generating SoA:", error);
+              alert("⚠️ Failed to generate SoA. Check console.");
             }
-          }
-        }
-
-        // Role-based redirect
-        const user = JSON.parse(sessionStorage.getItem("user"));
-        const role = user?.role || "";
-        if (role === "super_admin") {
-          setRedirectMessage(" Redirecting to Soa Page.");
-          history.push("/documentation/soa");
-        } else {
-          setRedirectMessage("⚠️ You do not have permission to access SoA. Redirecting to master list of documents...");
-          setTimeout(() => {
-            setRedirectMessage(""); // Clear after redirect
-            history.push("/documentation/mld");
-          }, 2000);
-        }
-      } catch (error) {
-        console.error("Error generating SoA:", error);
-        alert("⚠️ Failed to generate SoA. Check console.");
-      }
-    }}
-    style={{
-      padding: "12px 25px",
-      borderRadius: "50px",
-      background: "linear-gradient(45deg, #8e44ad, #9b59b6)",
-      color: "white",
-      border: "none",
-      fontSize: "16px",
-      fontWeight: "600",
-      cursor: "pointer",
-      boxShadow: "0 4px 15px rgba(155, 89, 182, 0.3)",
-      transition: "all 0.3s ease",
-    }}
-    title="Generate Statement of Applicability"
-    onMouseEnter={(e) => {
-      e.target.style.transform = "scale(1.05)";
-      e.target.style.boxShadow =
-        "0 6px 20px rgba(155, 89, 182, 0.4)";
-    }}
-    onMouseLeave={(e) => {
-      e.target.style.transform = "scale(1)";
-      e.target.style.boxShadow =
-        "0 4px 15px rgba(155, 89, 182, 0.3)";
-    }}
-  >
-    📄 Generate SoA
-  </button>
-</div>
-
+          }}
+          style={{
+            padding: "12px 25px",
+            borderRadius: "50px",
+            background: "linear-gradient(45deg, #8e44ad, #9b59b6)",
+            color: "white",
+            border: "none",
+            fontSize: "16px",
+            fontWeight: "600",
+            cursor: "pointer",
+            boxShadow: "0 4px 15px rgba(155, 89, 182, 0.3)",
+            transition: "all 0.3s ease",
+          }}
+          title="Generate Statement of Applicability"
+          onMouseEnter={(e) => {
+            e.target.style.transform = "scale(1.05)";
+            e.target.style.boxShadow = "0 6px 20px rgba(155, 89, 182, 0.4)";
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.transform = "scale(1)";
+            e.target.style.boxShadow = "0 4px 15px rgba(155, 89, 182, 0.3)";
+          }}
+        >
+          📄 Generate SoA
+        </button>
+      </div>
     </div>
   );
 };

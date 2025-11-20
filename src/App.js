@@ -10,6 +10,7 @@ import HamburgerMenu from "./components/navigations/HamburgerMenu";
 
 import Dashboard from "./modules/dashboard/Dashboard";
 import LoginPage from "./modules/departments/pages/loginPage";
+import ChangePasswordPage from "./modules/departments/pages/ChangePasswordPage";
 
 import RiskAssessment from "./modules/riskAssesment/pages/RiskAssessment";
 import AddRisk from "./modules/riskAssesment/pages/AddRisk";
@@ -68,40 +69,74 @@ function App() {
           <Switch>
             <Route exact path="/login" component={LoginPage} />
             <Route exact path="/" component={Dashboard} />
+            <Route
+              exact
+              path="/change-password"
+              component={ChangePasswordPage}
+            />
 
-            <ProtectedRoute exact path="/risk-assessment" component={RiskAssessment} />
+            <ProtectedRoute
+              exact
+              path="/risk-assessment"
+              component={RiskAssessment}
+            />
             <ProtectedRoute path="/risk-assessment/add" component={AddRisk} />
             <RoleBasedRoute
               path="/risk-assessment/saved"
               component={SavedRisksPage}
-              allowedRoles={["risk_owner", "risk_manager","super_admin" ]
-
-
-              }
+              allowedRoles={["risk_owner", "risk_manager", "super_admin"]}
             />
-              <RoleBasedRoute
+            <RoleBasedRoute
               path="/documentation/soa"
               component={SoaPage}
-              allowedRoles={["super_admin"]
-
-                
-              }
+              allowedRoles={["super_admin"]}
             />
 
-            <ProtectedRoute path="/risk-assessment/templates" component={TemplatesPage} />
+            <ProtectedRoute
+              path="/risk-assessment/templates"
+              component={TemplatesPage}
+            />
             {/* Route for the new My Tasks page */}
-            <ProtectedRoute path="/risk-assessment/my-tasks" component={MyTasks} />
+            <ProtectedRoute
+              path="/risk-assessment/my-tasks"
+              component={MyTasks}
+            />
 
-            <ProtectedRoute exact path="/documentation" component={Documentation} />
+            <ProtectedRoute
+              exact
+              path="/documentation"
+              component={Documentation}
+            />
             {/* <ProtectedRoute path="/documentation/soa" component={SoaPage} /> */}
-            <ProtectedRoute path="/documentation/controls" component={ControlsPage} />
-            <ProtectedRoute path="/documentation/reports" component={ReportsPage} />
-            <ProtectedRoute path="/documentation/settings" component={DocumentationSettingsPage} />
+            <ProtectedRoute
+              path="/documentation/controls"
+              component={ControlsPage}
+            />
+            <ProtectedRoute
+              path="/documentation/reports"
+              component={ReportsPage}
+            />
+            <ProtectedRoute
+              path="/documentation/settings"
+              component={DocumentationSettingsPage}
+            />
             <ProtectedRoute path="/documentation/mld" component={MLD} />
 
-            <ProtectedRoute exact path="/gap-assessment" component={GapAssessmentDashboard} />
-            <ProtectedRoute exact path="/gap-assessment/new" component={NewAssessment} />
-            <ProtectedRoute exact path="/gap-assessment/history" component={AssessmentHistory} />
+            <ProtectedRoute
+              exact
+              path="/gap-assessment"
+              component={GapAssessmentDashboard}
+            />
+            <ProtectedRoute
+              exact
+              path="/gap-assessment/new"
+              component={NewAssessment}
+            />
+            <ProtectedRoute
+              exact
+              path="/gap-assessment/history"
+              component={AssessmentHistory}
+            />
 
             <Route path="*">
               <Redirect to="/" />
@@ -114,17 +149,6 @@ function App() {
 }
 
 export default App;
-
-
-
-
-
-
-
-
-
-
-
 
 // import React from "react";
 // import {
@@ -210,8 +234,6 @@ export default App;
 //             />
 //             <ProtectedRoute path="/risk-assessment/templates" component={TemplatesPage} />
 //             {/* <ProtectedRoute path="/risk-assessment/tasks" component={TaskManagement} /> */}
-  
-            
 
 //             <ProtectedRoute exact path="/documentation" component={Documentation} />
 //             <ProtectedRoute path="/documentation/soa" component={SoaPage} />

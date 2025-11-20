@@ -1,6 +1,15 @@
 class riskService {
   constructor() {
-    this.baseUrl = "https://cftoolbackend.duckdns.org/api/risks"; // point to backend
+    this.baseUrl = "https://safesphere.duckdns.org/risk-service/api/risks";
+    // Replace with your backend credentials
+    this.username = "username";
+    this.password = "password";
+  }
+
+  // Helper to generate Basic Auth header
+  getAuthHeader() {
+    const token = btoa(`${this.username}:${this.password}`);
+    return { Authorization: `Basic ${token}` };
   }
 
   // --- Get all risks
@@ -8,7 +17,10 @@ class riskService {
     try {
       const response = await fetch(this.baseUrl, {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...this.getAuthHeader(),
+        },
       });
 
       if (!response.ok) {
@@ -38,8 +50,11 @@ class riskService {
   async saveRisk(riskData) {
     try {
       const response = await fetch(this.baseUrl, {
-        method: "POST", // backend decides insert/update
-        headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...this.getAuthHeader(),
+        },
         body: JSON.stringify(riskData),
       });
 
@@ -59,7 +74,10 @@ class riskService {
     try {
       const response = await fetch(`${this.baseUrl}/${riskId}`, {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...this.getAuthHeader(),
+        },
       });
 
       if (!response.ok) {
@@ -78,7 +96,10 @@ class riskService {
     try {
       const response = await fetch(`${this.baseUrl}/${riskId}`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...this.getAuthHeader(),
+        },
       });
 
       if (!response.ok) {

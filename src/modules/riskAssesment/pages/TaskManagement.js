@@ -1,10 +1,3 @@
- 
-
-
-
-
-
-
 import React, { useState, useEffect, useMemo } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import InputField from "../components/inputs/InputField";
@@ -169,12 +162,13 @@ export default function TaskManagement({ riskFormData = {} }) {
 
   // --- Employee options based on selected department ---
   const empOptions = useMemo(() => {
-  const options = (users || [])
-    .filter((u) => u.department?._id && String(u.department._id) === String(formData.department))
-    .map((u) => ({ value: u._id, label: u.name }));
+    const dept = departments?.find((d) => d.name === formData.department)?.id;
+    const options = (users || [])
+      .filter((u) => u.department && String(u.department) === String(dept))
+      .map((u) => ({ value: u._id, label: u.name }));
 
-  return options;
-}, [users, formData.department]);
+    return options;
+  }, [users, departments, formData.department]);
 
   const addTask = async () => {
     if (
@@ -223,6 +217,12 @@ export default function TaskManagement({ riskFormData = {} }) {
       taskId: newTaskId,
       status: STATUS.PENDING,
     };
+
+    // ✅ Add log here
+    console.log("🟦 NEW TASK TO BE SAVED:", newTask);
+    console.log("🟦 FormData before saving:", formData);
+    console.log("🟦 Employee options:", users);
+    console.log("🟦 Department selected:", formData.department);
 
     try {
       await taskService.saveTask(newTask);
@@ -473,7 +473,7 @@ export default function TaskManagement({ riskFormData = {} }) {
                   </td>
                   <td style={{ padding: "8px", border: "1px solid #ddd" }}>
                     {task.employeeName ||
-                      users.find((u) => String(u._id) === String(task.employee))
+                      users.find((u) => String(u.name) === String(task.employee))
                         ?.name ||
                       "—"}
                   </td>

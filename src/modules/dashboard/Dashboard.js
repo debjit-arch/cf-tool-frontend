@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useHistory } from "react-router-dom";
 import {
   ShieldCheck,
@@ -8,6 +8,8 @@ import {
   UserCircle2,
   Lock,
 } from "lucide-react";
+
+import ChangePasswordModal from "./ChangePasswordModal";
 
 const tiles = [
   {
@@ -58,6 +60,7 @@ const tiles = [
 const Dashboard = () => {
   const history = useHistory();
   const user = JSON.parse(sessionStorage.getItem("user"));
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   // Signed-in user view
   if (user) {
@@ -87,15 +90,20 @@ const Dashboard = () => {
                 {user.role || "Consultant"}
               </span>
             </div>
-            <button
-              onClick={() =>
-                (window.location.href =
-                  "https://main.d1jl1790poryf2.amplifyapp.com/change-password")
-              }
-              className="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 transition text-sm font-medium"
-            >
-              <Lock className="w-4 h-4" /> Change Password
-            </button>
+            {user && (
+              <button
+                onClick={() => setShowChangePassword(true)}
+                className="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 transition text-sm font-medium"
+              >
+                <Lock className="w-4 h-4" /> Change Password
+              </button>
+            )}
+
+            {showChangePassword && (
+              <ChangePasswordModal
+                onClose={() => setShowChangePassword(false)}
+              />
+            )}
           </div>
         </header>
 

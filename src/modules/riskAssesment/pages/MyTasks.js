@@ -35,7 +35,7 @@ const MyTasks = () => {
         if (!mounted) return;
 
         const filteredTasks = allTasks.filter(
-          (t) => String(t.employee) === String(user._id || user.id)
+          (t) => String(t.employee) === String(user.name || user._id)
         );
         setTasks(filteredTasks);
       } catch (error) {
@@ -257,7 +257,7 @@ const MyTasks = () => {
                   </td>
                   <td style={tdStyle}>
                     {task.status === STATUS.PENDING &&
-                      String(task.employee) === String(user._id || user.id) && (
+                      String(task.employee) === String(user.name || user.id) && (
                         <button
                           style={{ ...buttonStyle, background: "#2ecc71" }}
                           onClick={() => markTaskComplete(task.taskId)}

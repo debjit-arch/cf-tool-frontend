@@ -1,11 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ISO_27001_CLAUSES, ISO_27001_CONTROL } from "../constant";
-import {
-  Upload,
-  X,
-  ClipboardCheck,
-  ShieldCheck,
-} from "lucide-react";
+import { Upload, X, ClipboardCheck, ShieldCheck } from "lucide-react";
 import gapService from "../services/gapService";
 
 const NewAssessment = () => {
@@ -36,23 +31,20 @@ const NewAssessment = () => {
           standardRequirement: item.standardRequirement,
           question: typeof q === "string" ? q : q.text || q,
           departments:
-            item.departments?.map((d) =>
-              typeof d === "string" ? d : d.name
-            ) || [],
+            item.departments?.map((d) => (typeof d === "string" ? d : d.name)) || [],
           documentEvidence: null,
           practiceEvidence: null,
-          practiceEvidenceText: "",
+          practiceNotes: "",
           docScore: "",
           practiceScore: "",
+          totalScore: 0,
           docRemarks: "",
           practiceRemarks: "",
           gapId: null,
         }))
       )
       .filter((row) =>
-        !user?.department?.name
-          ? true
-          : row.departments.includes(user.department.name)
+        !user?.department?.name ? true : row.departments.includes(user.department.name)
       );
 
     setRows(filtered);
@@ -75,9 +67,12 @@ const NewAssessment = () => {
                   ...row,
                   documentEvidence: gap.documentURL || null,
                   practiceEvidence: gap.practiceEvidence || null,
-                  practiceEvidenceText: gap.practiceEvidenceText || "",
+                  practiceNotes: gap.practiceNotes || "",
                   docScore: gap.docScore || "",
                   practiceScore: gap.practiceScore || "",
+                  totalScore:
+                    (gap.docScore ? parseInt(gap.docScore) : 0) +
+                    (gap.practiceScore ? parseInt(gap.practiceScore) : 0),
                   docRemarks: gap.docRemarks || "",
                   practiceRemarks: gap.practiceRemarks || "",
                   gapId: gap._id,
@@ -89,6 +84,7 @@ const NewAssessment = () => {
         console.error("Failed to fetch gaps:", err);
       }
     };
+
     fetchGaps();
   }, [user]);
 
@@ -97,50 +93,51 @@ const NewAssessment = () => {
     setRows((prev) => {
       const updated = [...prev];
       updated[i][field] = value;
+
+      // Update totalScore live
+      if (field === "docScore" || field === "practiceScore") {
+        const doc = updated[i].docScore ? parseInt(updated[i].docScore) : 0;
+        const practice = updated[i].practiceScore ? parseInt(updated[i].practiceScore) : 0;
+        updated[i].totalScore = doc + practice;
+      }
+
       return updated;
     });
   };
 
-  // Document upload
-  const handleFileChange = async (i, file) => {
+  // File upload handler
+  const handleFileChange = async (i, file, field) => {
     if (!file) return;
     try {
-      const url = await gapService.uploadFile(file);
-      const newRow = { ...rows[i], documentEvidence: url };
-      setRows((prev) => {
-        const updated = [...prev];
-        updated[i] = newRow;
-        return updated;
-      });
-      const saved = await gapService.saveEntry({
-        ...newRow,
-        documentURL: url,
-        createdBy: user?.id,
-      });
-      handleInputChange(i, "gapId", saved._id);
-    } catch {
-      alert("Upload failed");
-    }
-  };
+      const { url } = await gapService.uploadFile(file);
+      const newRow = { ...rows[i], [field]: url };
 
-  // Practice file upload
-  const handlePracticeFileChange = async (i, file) => {
-    if (!file) return;
-    try {
-      const url = await gapService.uploadFile(file);
-      const newRow = { ...rows[i], practiceEvidence: url };
       setRows((prev) => {
         const updated = [...prev];
         updated[i] = newRow;
         return updated;
       });
-      const saved = await gapService.saveEntry({
-        ...newRow,
-        practiceEvidence: url,
-        createdBy: user?.id,
-      });
+
+      const payload = {
+        clause: newRow.clause,
+        question: newRow.question,
+        standardRequirement: newRow.standardRequirement,
+        documentURL: newRow.documentEvidence || "",
+        practiceEvidence: newRow.practiceEvidence || "",
+        practiceNotes: newRow.practiceNotes || "",
+        docScore: newRow.docScore || "",
+        practiceScore: newRow.practiceScore || "",
+        totalScore: newRow.totalScore || 0,
+        docRemarks: newRow.docRemarks || "",
+        practiceRemarks: newRow.practiceRemarks || "",
+        createdBy: user?.id || "",
+        department: user?.department?.name || "",
+      };
+
+      const saved = await gapService.saveEntry(payload);
       handleInputChange(i, "gapId", saved._id);
-    } catch {
+    } catch (err) {
+      console.error(err);
       alert("Upload failed");
     }
   };
@@ -150,7 +147,6 @@ const NewAssessment = () => {
     const row = rows[i];
     const fileUrl = row[field];
     if (!fileUrl) return;
-
     if (!window.confirm("Are you sure you want to delete this file?")) return;
 
     const backendFieldMap = {
@@ -158,20 +154,15 @@ const NewAssessment = () => {
       practiceEvidence: "practiceEvidence",
     };
     const backendField = backendFieldMap[field];
-    if (!backendField) {
-      console.error("Unknown field:", field);
-      return;
-    }
+    if (!backendField) return console.error("Unknown field:", field);
 
     try {
       await gapService.deleteDocumentByUrl(fileUrl, backendField);
-
       setRows((prev) => {
         const updated = [...prev];
         updated[i][field] = null;
         return updated;
       });
-
       alert("File deleted successfully");
     } catch (err) {
       console.error("Delete failed:", err);
@@ -179,15 +170,12 @@ const NewAssessment = () => {
     }
   };
 
-  // Save practice text on blur
+  // Save practice notes on blur
   const handlePracticeBlur = async (i) => {
     const r = rows[i];
-    if (!r.practiceEvidenceText) return;
+    if (!r.practiceNotes) return;
     try {
-      const saved = await gapService.saveEntry({
-        ...r,
-        createdBy: user?.id,
-      });
+      const saved = await gapService.saveEntry({ ...r, createdBy: user?.id });
       handleInputChange(i, "gapId", saved._id);
     } catch (err) {
       console.error(err);
@@ -197,12 +185,16 @@ const NewAssessment = () => {
   // Auditor score/remark updates
   const handleAuditorChange = async (i, field, value) => {
     const r = rows[i];
-    const updated = { ...r, [field]: value };
     handleInputChange(i, field, value);
     if (!r.gapId) return;
+
     try {
       await gapService.updateEntry(r.gapId, {
-        ...updated,
+        ...r,
+        [field]: value,
+        totalScore:
+          (field === "docScore" ? parseInt(value) : parseInt(r.docScore || 0)) +
+          (field === "practiceScore" ? parseInt(value) : parseInt(r.practiceScore || 0)),
         verifiedBy: user?.id,
       });
     } catch (err) {
@@ -214,6 +206,15 @@ const NewAssessment = () => {
   const grouped = rows.reduce((acc, r, idx) => {
     if (!acc[r.clause]) acc[r.clause] = [];
     acc[r.clause].push({ ...r, idx });
+    return acc;
+  }, {});
+
+  // Calculate final clause score (%)
+  const clauseScores = Object.keys(grouped).reduce((acc, clause) => {
+    const answered = grouped[clause].filter((q) => q.docScore !== "" || q.practiceScore !== "");
+    const total = answered.reduce((sum, q) => sum + (q.totalScore || 0), 0);
+    const maxTotal = answered.length * 4;
+    acc[clause] = maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(2) : "—";
     return acc;
   }, {});
 
@@ -233,7 +234,6 @@ const NewAssessment = () => {
       <div className="overflow-auto rounded-xl shadow border border-gray-200">
         {Object.keys(grouped).map((clause, i) => (
           <div key={i} className="mb-6">
-            {/* Clause Header Section */}
             <div className="bg-blue-100 px-4 py-2 border-b border-gray-200">
               <h3 className="font-semibold text-gray-800">{clause}</h3>
               <span className="block text-sm text-gray-600">
@@ -241,7 +241,6 @@ const NewAssessment = () => {
               </span>
             </div>
 
-            {/* Table Section */}
             <table className="min-w-full text-sm border-collapse">
               <thead className="bg-gray-50 sticky top-0 z-10">
                 <tr>
@@ -250,6 +249,7 @@ const NewAssessment = () => {
                   <th className="border px-3 py-2">Practice Evidence</th>
                   <th className="border px-3 py-2">Doc Score</th>
                   <th className="border px-3 py-2">Practice Score</th>
+                  <th className="border px-3 py-2">Total Score</th>
                   <th className="border px-3 py-2">Doc Remarks</th>
                   <th className="border px-3 py-2">Practice Remarks</th>
                 </tr>
@@ -257,9 +257,9 @@ const NewAssessment = () => {
               <tbody>
                 {grouped[clause].map((row) => (
                   <tr key={row.idx} className="hover:bg-blue-50 transition">
-                    <td className="border px-3 py-2 font-medium">
-                      {row.question}
-                    </td>
+                    <td className="border px-3 py-2 font-medium">{row.question}</td>
+
+                    {/* Document Evidence */}
                     <td className="border px-3 py-2">
                       {userRole !== "auditor" && (
                         <label className="cursor-pointer text-blue-600 hover:underline text-xs">
@@ -267,31 +267,19 @@ const NewAssessment = () => {
                           <input
                             type="file"
                             className="hidden"
-                            onChange={(e) =>
-                              handleFileChange(row.idx, e.target.files[0])
-                            }
+                            onChange={(e) => handleFileChange(row.idx, e.target.files[0], "documentEvidence")}
                           />
                         </label>
                       )}
                       {row.documentEvidence && (
                         <>
-                          <button
-                            onClick={() => setSelectedDoc(row.documentEvidence)}
-                            className="text-xs text-blue-600 hover:underline ml-2 mr-1"
-                          >
-                            View
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleDeleteFile(row.idx, "documentEvidence")
-                            }
-                            className="text-xs text-red-500 hover:underline"
-                          >
-                            Delete
-                          </button>
+                          <button onClick={() => setSelectedDoc(row.documentEvidence)} className="text-xs text-blue-600 hover:underline ml-2 mr-1">View</button>
+                          <button onClick={() => handleDeleteFile(row.idx, "documentEvidence")} className="text-xs text-red-500 hover:underline">Delete</button>
                         </>
                       )}
                     </td>
+
+                    {/* Practice Evidence */}
                     <td className="border px-3 py-2">
                       {userRole !== "auditor" && (
                         <label className="cursor-pointer text-green-600 hover:underline text-xs">
@@ -299,168 +287,61 @@ const NewAssessment = () => {
                           <input
                             type="file"
                             className="hidden"
-                            onChange={(e) =>
-                              handlePracticeFileChange(
-                                row.idx,
-                                e.target.files[0]
-                              )
-                            }
+                            onChange={(e) => handleFileChange(row.idx, e.target.files[0], "practiceEvidence")}
                           />
                         </label>
                       )}
                       {row.practiceEvidence && (
                         <>
-                          <button
-                            onClick={() =>
-                              setSelectedDoc(row.practiceEvidence)
-                            }
-                            className="text-xs text-green-600 hover:underline ml-2 mr-1"
-                          >
-                            View
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleDeleteFile(row.idx, "practiceEvidence")
-                            }
-                            className="text-xs text-red-500 hover:underline"
-                          >
-                            Delete
-                          </button>
+                          <button onClick={() => setSelectedDoc(row.practiceEvidence)} className="text-xs text-green-600 hover:underline ml-2 mr-1">View</button>
+                          <button onClick={() => handleDeleteFile(row.idx, "practiceEvidence")} className="text-xs text-red-500 hover:underline">Delete</button>
                         </>
                       )}
                       <textarea
                         className="w-full border rounded mt-2 px-1 py-0.5"
                         rows="1"
-                        value={row.practiceEvidenceText || ""}
+                        value={row.practiceNotes || ""}
                         placeholder="Practice notes..."
-                        onChange={(e) =>
-                          handleInputChange(
-                            row.idx,
-                            "practiceEvidenceText",
-                            e.target.value
-                          )
-                        }
+                        onChange={(e) => handleInputChange(row.idx, "practiceNotes", e.target.value)}
                         onBlur={() => handlePracticeBlur(row.idx)}
                       />
                     </td>
-                    <td className="border px-3 py-2">
-                      {userRole === "auditor" ? (
-                        <select
-                          className="w-full border"
-                          value={row.docScore}
-                          onChange={(e) =>
-                            handleAuditorChange(
-                              row.idx,
-                              "docScore",
-                              e.target.value
-                            )
-                          }
-                        >
-                          <option value="">Doc Score</option>
-                          <option value="0">0</option>
-                          <option value="1">1</option>
-                          <option value="2">2</option>
-                        </select>
-                      ) : (
-                        <span>{row.docScore || "—"}</span>
-                      )}
-                    </td>
-                    <td className="border px-3 py-2">
-                      {userRole === "auditor" ? (
-                        <select
-                          className="w-full border"
-                          value={row.practiceScore}
-                          onChange={(e) =>
-                            handleAuditorChange(
-                              row.idx,
-                              "practiceScore",
-                              e.target.value
-                            )
-                          }
-                        >
-                          <option value="">Practice Score</option>
-                          <option value="0">0</option>
-                          <option value="1">1</option>
-                          <option value="2">2</option>
-                        </select>
-                      ) : (
-                        <span>{row.practiceScore || "—"}</span>
-                      )}
-                    </td>
-                    <td className="border px-3 py-2">
-                      {userRole === "auditor" ? (
-                        <textarea
-                          className="w-full border"
-                          rows="1"
-                          value={row.docRemarks}
-                          placeholder="Doc remarks..."
-                          onChange={(e) =>
-                            handleAuditorChange(
-                              row.idx,
-                              "docRemarks",
-                              e.target.value
-                            )
-                          }
-                        />
-                      ) : (
-                        <span>{row.docRemarks || "—"}</span>
-                      )}
-                    </td>
-                    <td className="border px-3 py-2">
-                      {userRole === "auditor" ? (
-                        <textarea
-                          className="w-full border"
-                          rows="1"
-                          value={row.practiceRemarks}
-                          placeholder="Practice remarks..."
-                          onChange={(e) =>
-                            handleAuditorChange(
-                              row.idx,
-                              "practiceRemarks",
-                              e.target.value
-                            )
-                          }
-                        />
-                      ) : (
-                        <span>{row.practiceRemarks || "—"}</span>
-                      )}
-                    </td>
+
+                    {/* Scores and remarks */}
+                    <td className="border px-3 py-2">{userRole === "auditor" ? <select value={row.docScore} onChange={(e) => handleAuditorChange(row.idx, "docScore", e.target.value)} className="w-full border"><option value="">Doc Score</option><option value="0">0</option><option value="1">1</option><option value="2">2</option></select> : <span>{row.docScore || "—"}</span>}</td>
+
+                    <td className="border px-3 py-2">{userRole === "auditor" ? <select value={row.practiceScore} onChange={(e) => handleAuditorChange(row.idx, "practiceScore", e.target.value)} className="w-full border"><option value="">Practice Score</option><option value="0">0</option><option value="1">1</option><option value="2">2</option></select> : <span>{row.practiceScore || "—"}</span>}</td>
+
+                    <td className="border px-3 py-2 font-semibold text-center">{row.totalScore}</td>
+
+                    <td className="border px-3 py-2">{userRole === "auditor" ? <textarea value={row.docRemarks} onChange={(e) => handleAuditorChange(row.idx, "docRemarks", e.target.value)} className="w-full border" rows="1" placeholder="Doc remarks..." /> : <span>{row.docRemarks || "—"}</span>}</td>
+
+                    <td className="border px-3 py-2">{userRole === "auditor" ? <textarea value={row.practiceRemarks} onChange={(e) => handleAuditorChange(row.idx, "practiceRemarks", e.target.value)} className="w-full border" rows="1" placeholder="Practice remarks..." /> : <span>{row.practiceRemarks || "—"}</span>}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+
+            {/* Clause Score */}
+            <div className="text-right pr-4 pt-2 text-sm font-semibold text-gray-700">
+              Clause Score: {clauseScores[clause]}%
+            </div>
           </div>
         ))}
       </div>
 
       {/* Document Modal */}
       {selectedDoc && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50"
-          onClick={() => setSelectedDoc(null)}
-        >
-          <div
-            className="bg-white rounded-lg p-4 w-11/12 md:w-3/4 lg:w-1/2 relative shadow-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50" onClick={() => setSelectedDoc(null)}>
+          <div className="bg-white rounded-lg p-4 w-11/12 md:w-3/4 lg:w-1/2 relative shadow-lg" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-3 border-b pb-2">
               <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
-                <ClipboardCheck className="text-blue-600" size={18} /> Uploaded
-                Document
+                <ClipboardCheck className="text-blue-600" size={18} /> Uploaded Document
               </h3>
-              <button
-                onClick={() => setSelectedDoc(null)}
-                className="text-red-500 hover:text-red-700"
-              >
-                <X size={20} />
-              </button>
+              <button onClick={() => setSelectedDoc(null)} className="text-red-500 hover:text-red-700"><X size={20} /></button>
             </div>
             <iframe
-              src={
-                selectedDoc.startsWith("http")
-                  ? selectedDoc
-                  : `https://cftoolbackend.duckdns.org${selectedDoc}`
-              }
+              src={selectedDoc.startsWith("http") ? selectedDoc : `http://13.234.231.220:4004${selectedDoc}`}
               className="w-full h-96 border rounded-md"
               title="Document Preview"
             />

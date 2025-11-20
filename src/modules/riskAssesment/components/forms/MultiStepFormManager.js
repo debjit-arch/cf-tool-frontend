@@ -19,7 +19,7 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
     async function loadDepartments() {
       try {
         const token = sessionStorage.getItem("token");
-        const res = await fetch("https://cftoolbackend.duckdns.org/api/users/departments", {
+        const res = await fetch("https://safesphere.duckdns.org/user-service/api/departments", {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
