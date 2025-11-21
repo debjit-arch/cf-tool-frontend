@@ -299,6 +299,7 @@ const RiskDetailsForm = ({
     const c = parseInt(formData.confidentiality) || 0;
     const i = parseInt(formData.integrity) || 0;
     const a = parseInt(formData.availability) || 0;
+    formData.impact = Math.max(c, i, a);
     return Math.max(c, i, a);
   };
 
