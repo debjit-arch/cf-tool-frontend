@@ -64,7 +64,7 @@ const MLD = () => {
   const handlePreviewClick = (soa) => {
     const doc = documents.find((d) => String(d.soaId) === String(soa.id));
     if (doc) {
-      const baseUrl = "http://safesphere.duckdns.org:4002";
+      const baseUrl = "https://safesphere.duckdns.org";
       const filePath = doc.url.startsWith("/") ? doc.url : `/${doc.url}`;
       const encodedPath = encodeURI(filePath);
       const fullUrl = baseUrl + encodedPath;
