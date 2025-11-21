@@ -742,7 +742,7 @@ const MLD = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
+            backgroundColor: "rgba(0,0,0,0.6)",
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
@@ -753,8 +753,8 @@ const MLD = () => {
             style={{
               background: "white",
               borderRadius: "12px",
-              maxWidth: "90%",
-              maxHeight: "90%",
+              width: "95vw",
+              height: "95vh",
               overflow: "hidden",
               position: "relative",
             }}
@@ -773,14 +773,20 @@ const MLD = () => {
                 height: "30px",
                 fontWeight: 600,
                 cursor: "pointer",
+                zIndex: 1,
               }}
             >
               ×
             </button>
+
             <iframe
               src={previewUrl}
               title="Preview Document"
-              style={{ width: "100%", height: "80vh", border: "none" }}
+              style={{
+                width: "100%",
+                height: "100%",
+                border: "none",
+              }}
             />
           </div>
         </div>
