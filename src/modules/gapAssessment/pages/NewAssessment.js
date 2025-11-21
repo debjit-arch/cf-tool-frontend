@@ -341,7 +341,7 @@ const NewAssessment = () => {
               <button onClick={() => setSelectedDoc(null)} className="text-red-500 hover:text-red-700"><X size={20} /></button>
             </div>
             <iframe
-              src={selectedDoc.startsWith("http") ? selectedDoc : `http://13.234.231.220:4004${selectedDoc}`}
+              src={selectedDoc.startsWith("http") ? selectedDoc : `https://safesphere.duckdns.org/gap-service${selectedDoc}`}
               className="w-full h-96 border rounded-md"
               title="Document Preview"
             />
