@@ -685,26 +685,47 @@ const MLD = () => {
                       >
                         {hasUploaded && (
                           <>
-                            <button
-                              onClick={handleApprove}
-                              style={{
-                                backgroundColor: "#2ecc71",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "6px",
-                                padding: "4px 6px",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                            >
-                              <Calendar
-                                size={16}
-                                style={{ marginRight: "4px" }}
-                              />
-                              Approve
-                            </button>
+                            {doc?.approvalDate ? (
+                              // Show tick icon if approved
+                              <div
+                                style={{
+                                  backgroundColor: "#2ecc71",
+                                  color: "white",
+                                  borderRadius: "6px",
+                                  padding: "4px 6px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  width: "32px",
+                                  height: "32px",
+                                }}
+                              >
+                                <Check size={20} />
+                              </div>
+                            ) : (
+                              // Show Approve button if not approved
+                              <button
+                                onClick={handleApprove}
+                                style={{
+                                  backgroundColor: "#2ecc71",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "6px",
+                                  padding: "4px 6px",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                              >
+                                <Calendar
+                                  size={16}
+                                  style={{ marginRight: "4px" }}
+                                />
+                                Approve
+                              </button>
+                            )}
+
                             <button
                               onClick={() => handleDeleteForSoA(soaId)}
                               style={{
