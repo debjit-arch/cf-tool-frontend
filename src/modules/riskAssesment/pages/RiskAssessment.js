@@ -50,27 +50,38 @@ const RiskAssessment = () => {
 
   const loadRiskStats = useCallback(async () => {
     if (!user) return;
+
     try {
       const risks = await riskService.getAllRisks();
       if (!Array.isArray(risks)) return;
 
+      console.log("User Department:", user.department?.name);
+      console.log(
+        "All Risk Departments:",
+        risks.map((r) => r.department)
+      );
+
       const departments = await getDepartments();
       const deptName = departments.find(
-        (d) => d.id === user.departmentId
+        (d) => d.id === user.department?.id
       )?.name;
       if (!deptName) return;
 
       const departmentRisks = risks.filter(
-        (risk) => risk.department === user.department?.name
+        (risk) =>
+          risk.department &&
+          user.department?.name &&
+          risk.department.trim().toLowerCase() ===
+            user.department.name.trim().toLowerCase()
       );
-      
+
       const stats = departmentRisks.reduce(
         (acc, risk) => {
           acc.total++;
           const level = calculateRiskLevel(risk);
           acc[level.toLowerCase()]++;
-          if (risk.status === "Active") acc.open++;
-          else acc.closed++;
+          if (risk.status === "Closed") acc.closed++;
+          else acc.open++;
           return acc;
         },
         {
@@ -268,6 +279,58 @@ const RiskAssessment = () => {
             High Risk
           </p>
         </div>
+        <div
+          style={{ ...statCardStyle, borderLeft: "3px solid #e74c3c" }}
+          onClick={() => history.push("/risk-assessment/saved")}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.transform = "translateY(-2px)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.transform = "translateY(0)")
+          }
+        >
+          <h2
+            style={{ color: "#e74c3c", margin: "0 0 6px 0", fontSize: "28px" }}
+          >
+            {riskStats.open}
+          </h2>
+          <p
+            style={{
+              color: "#7f8c8d",
+              margin: 0,
+              fontSize: "13px",
+              fontWeight: "600",
+            }}
+          >
+            Open Risk
+          </p>
+        </div>
+        <div
+          style={{ ...statCardStyle, borderLeft: "3px solid #e74c3c" }}
+          onClick={() => history.push("/risk-assessment/saved")}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.transform = "translateY(-2px)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.transform = "translateY(0)")
+          }
+        >
+          <h2
+            style={{ color: "#e74c3c", margin: "0 0 6px 0", fontSize: "28px" }}
+          >
+            {riskStats.closed}
+          </h2>
+          <p
+            style={{
+              color: "#7f8c8d",
+              margin: 0,
+              fontSize: "13px",
+              fontWeight: "600",
+            }}
+          >
+            CLosed Risk
+          </p>
+        </div>
       </div>
 
       {/* Quick Actions */}
@@ -282,7 +345,10 @@ const RiskAssessment = () => {
             (e.currentTarget.style.transform = "translateY(0)")
           }
         >
-          <FileText size={32} style={{ marginBottom: "10px", color: "#3498db" }} />
+          <FileText
+            size={32}
+            style={{ marginBottom: "10px", color: "#3498db" }}
+          />
           <h3
             style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#2c3e50" }}
           >
@@ -308,7 +374,9 @@ const RiskAssessment = () => {
           }
         >
           <PlusCircle size={32} style={{ marginBottom: "10px" }} />
-          <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>Add New Risk</h3>
+          <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>
+            Add New Risk
+          </h3>
           <p style={{ margin: 0, fontSize: "13px", opacity: 0.9 }}>
             Identify a New Risk
           </p>
@@ -324,7 +392,10 @@ const RiskAssessment = () => {
             (e.currentTarget.style.transform = "translateY(0)")
           }
         >
-          <CheckCircle size={32} style={{ marginBottom: "10px", color: "#2ecc71" }} />
+          <CheckCircle
+            size={32}
+            style={{ marginBottom: "10px", color: "#2ecc71" }}
+          />
           <h3
             style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#2c3e50" }}
           >
@@ -335,7 +406,9 @@ const RiskAssessment = () => {
           </p>
         </div>
 
-        {(user.role === "risk_owner" || user.role === "risk_manager" ||user.role === "super_admin") && (
+        {(user.role === "risk_owner" ||
+          user.role === "risk_manager" ||
+          user.role === "super_admin") && (
           <div
             style={actionCardStyle}
             onClick={() => history.push("/risk-assessment/saved")}
@@ -346,7 +419,10 @@ const RiskAssessment = () => {
               (e.currentTarget.style.transform = "translateY(0)")
             }
           >
-            <FolderOpen size={32} style={{ marginBottom: "10px", color: "#2c3e50" }} />
+            <FolderOpen
+              size={32}
+              style={{ marginBottom: "10px", color: "#2c3e50" }}
+            />
             <h3
               style={{
                 margin: "0 0 6px 0",
@@ -354,7 +430,7 @@ const RiskAssessment = () => {
                 color: "#2c3e50",
               }}
             >
-              View Saved Risks
+              My Risks
             </h3>
             <p style={{ margin: 0, fontSize: "13px", color: "#7f8c8d" }}>
               View Identified Risk for your Department

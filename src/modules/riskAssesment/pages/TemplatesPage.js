@@ -1,742 +1,4 @@
-// import React, { useEffect, useState } from "react";
-// import templateRiskService from "../services/templateRiskService";
-// import riskService from "../services/riskService";
-
-// const RiskTemplateTable = () => {
-//   const [risks, setRisks] = useState([]);
-//   const [savingId, setSavingId] = useState(null);
-//   const [removingId, setRemovingId] = useState(null);
-//   const [selectedRisk, setSelectedRisk] = useState(null);
-//   const [showModal, setShowModal] = useState(false);
-//   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-//   const [riskToRemove, setRiskToRemove] = useState(null);
-//   const [currentPage, setCurrentPage] = useState(1);
-//   const risksPerPage = 5;
-
-//   useEffect(() => {
-//     const fetchData = async () => {
-//       const data = await templateRiskService.getAllTemplateRisks();
-//       setRisks(data);
-//     };
-//     fetchData();
-//   }, []);
-
-//   // Handle Accept (Add Risk)
-//   const handleAcceptRisk = async (risk, index) => {
-//     try {
-//       setSavingId(index);
-
-//       const existingRisks = await riskService.getAllRisks();
-//       const currentYear = new Date().getFullYear();
-//       const maxNumber = existingRisks.reduce((max, r) => {
-//         const match = r.riskId.match(/RR-\d{4}-(\d+)/);
-//         if (match) {
-//           const num = parseInt(match[1], 10);
-//           return num > max ? num : max;
-//         }
-//         return max;
-//       }, 0);
-//       const nextNumber = String(maxNumber + 1).padStart(3, "0");
-//       const nextRiskId = `RR-${currentYear}-${nextNumber}`;
-
-//       const newRisk = {
-//         ...risk,
-//         riskId: nextRiskId,
-//         probability: String(risk.probability),
-//         numberOfDays: String(risk.numberOfDays),
-//         likelihoodAfterTreatment: String(risk.likelihoodAfterTreatment),
-//         impactAfterTreatment: String(risk.impactAfterTreatment),
-//         controlReference: Array.isArray(risk.controlReference)
-//           ? risk.controlReference
-//           : [risk.controlReference].filter(Boolean),
-//         vulnerability: Array.isArray(risk.vulnerability)
-//           ? risk.vulnerability
-//           : [risk.vulnerability].filter(Boolean),
-//         createdAt: new Date().toISOString(),
-//         updatedAt: new Date().toISOString(),
-//         status: "Active",
-//       };
-
-//       await riskService.saveRisk(newRisk);
-//       alert(`Risk template ${index + 1} accepted and added successfully!`);
-//     } catch (error) {
-//       console.error(error);
-//       alert(`Failed to accept risk template: ${error.message}`);
-//     } finally {
-//       setSavingId(null);
-//     }
-//   };
-
-//   // Handle Reject (Remove Risk)
-//   const handleRejectRisk = (index) => {
-//     setRiskToRemove(index);
-//     setShowConfirmDialog(true);
-//   };
-
-//   const confirmRejectRisk = () => {
-//     setRemovingId(riskToRemove);
-//     setTimeout(() => {
-//       const newRisks = risks.filter((_, index) => index !== riskToRemove);
-//       setRisks(newRisks);
-//       setRemovingId(null);
-//       setShowConfirmDialog(false);
-//       setRiskToRemove(null);
-//       alert(`Risk template ${riskToRemove + 1} has been removed from view.`);
-//     }, 500);
-//   };
-
-//   const cancelRejectRisk = () => {
-//     setShowConfirmDialog(false);
-//     setRiskToRemove(null);
-//   };
-
-//   // Handle View Full Risk
-//   const handleViewFullRisk = (risk, index) => {
-//     setSelectedRisk({ ...risk, serialNo: index + 1 });
-//     setShowModal(true);
-//   };
-
-//   const closeModal = () => {
-//     setShowModal(false);
-//     setSelectedRisk(null);
-//   };
-
-//   // Get risk level color
-//   const getRiskLevelColor = (riskLevel) => {
-//     switch (riskLevel?.toLowerCase()) {
-//       case "high":
-//         return "#ffcccb"; // Light red
-//       case "medium":
-//         return "#ffffcc"; // Light yellow
-//       case "low":
-//         return "#ccffcc"; // Light green
-//       default:
-//         return "#f0f0f0"; // Light gray
-//     }
-//   };
-
-//   // Button styles
-//   const buttonBaseStyle = {
-//     padding: "8px 16px",
-//     border: "none",
-//     borderRadius: "4px",
-//     cursor: "pointer",
-//     fontSize: "14px",
-//     fontWeight: "500",
-//     margin: "0 4px",
-//     minWidth: "70px",
-//     transition: "all 0.2s ease",
-//   };
-
-//   const acceptButtonStyle = {
-//     ...buttonBaseStyle,
-//     backgroundColor: "#28a745",
-//     color: "white",
-//   };
-
-//   const rejectButtonStyle = {
-//     ...buttonBaseStyle,
-//     backgroundColor: "#dc3545",
-//     color: "white",
-//   };
-
-//   const viewButtonStyle = {
-//     ...buttonBaseStyle,
-//     backgroundColor: "#007bff",
-//     color: "white",
-//   };
-
-//   // Main table styles
-//   const tableStyles = {
-//     width: "100%",
-//     borderCollapse: "collapse",
-//     fontSize: "14px",
-//     backgroundColor: "white",
-//     boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-//   };
-
-//   const headerStyles = {
-//     backgroundColor: "#f8f9fa",
-//     padding: "16px 12px",
-//     textAlign: "center",
-//     fontWeight: "600",
-//     fontSize: "15px",
-//     border: "2px solid #dee2e6",
-//     position: "sticky",
-//     top: 0,
-//     zIndex: 10,
-//   };
-
-//   const cellStyles = {
-//     padding: "12px",
-//     border: "1px solid #dee2e6",
-//     textAlign: "left",
-//     verticalAlign: "top",
-//   };
-
-//   // Pagination logic
-//   const indexOfLastRisk = currentPage * risksPerPage;
-//   const indexOfFirstRisk = indexOfLastRisk - risksPerPage;
-//   const currentRisks = risks.slice(indexOfFirstRisk, indexOfLastRisk);
-//   const totalPages = Math.ceil(risks.length / risksPerPage);
-
-//   const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
-//   return (
-//     <div
-//       style={{
-//         padding: "20px",
-//         backgroundColor: "#f8f9fa",
-//         minHeight: "100vh",
-//       }}
-//     >
-//       <h2
-//         style={{
-//           fontSize: "2rem",
-//           fontWeight: "bold",
-//           marginBottom: "20px",
-//           textAlign: "center",
-//           color: "#333",
-//         }}
-//       >
-//         Sample Risks
-//       </h2>
-
-//       <div
-//         style={{
-//           overflowX: "auto",
-//           backgroundColor: "white",
-//           borderRadius: "8px",
-//           boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-//         }}
-//       >
-//         <table style={tableStyles}>
-//           <thead>
-//             <tr>
-//               <th style={{ ...headerStyles, width: "80px" }}>Risk ID</th>
-//               <th style={{ ...headerStyles, width: "45%" }}>
-//                 Risk Description
-//               </th>
-//               <th style={{ ...headerStyles, width: "100px" }}>Risk Score</th>
-//               <th style={{ ...headerStyles, width: "120px" }}>Risk Level</th>
-//               <th
-//                 style={{
-//                   ...headerStyles,
-//                   width: "280px",
-//                   backgroundColor: "#e3f2fd",
-//                 }}
-//               >
-//                 Actions
-//               </th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {currentRisks.map((risk, index) => (
-//               <tr
-//                 key={index}
-//                 style={{
-//                   backgroundColor: index % 2 === 0 ? "#ffffff" : "#f9f9f9",
-//                   opacity: removingId === index ? 0.3 : 1,
-//                   transform: removingId === index ? "scale(0.98)" : "scale(1)",
-//                   transition: "all 0.3s ease",
-//                 }}
-//               >
-//                 {/* Risk ID (Serial Number) */}
-//                 <td
-//                   style={{
-//                     ...cellStyles,
-//                     textAlign: "center",
-//                     fontWeight: "600",
-//                   }}
-//                 >
-//                   {indexOfFirstRisk + index + 1}
-//                 </td>
-
-//                 {/* Risk Description */}
-//                 <td style={{ ...cellStyles, lineHeight: "1.5" }}>
-//                   {risk.riskDescription}
-//                 </td>
-
-//                 {/* Risk Score */}
-//                 <td
-//                   style={{
-//                     ...cellStyles,
-//                     textAlign: "center",
-//                     fontWeight: "600",
-//                     fontSize: "16px",
-//                   }}
-//                 >
-//                   {risk.riskScore}
-//                 </td>
-
-//                 {/* Risk Level */}
-//                 <td
-//                   style={{
-//                     ...cellStyles,
-//                     textAlign: "center",
-//                     backgroundColor: getRiskLevelColor(risk.riskLevel),
-//                     fontWeight: "600",
-//                     fontSize: "14px",
-//                   }}
-//                 >
-//                   {risk.riskLevel}
-//                 </td>
-
-//                 {/* Action Buttons */}
-//                 <td
-//                   style={{
-//                     ...cellStyles,
-//                     textAlign: "center",
-//                     backgroundColor: "#f8f9fa",
-//                   }}
-//                 >
-//                   <button
-//                     onClick={() => handleAcceptRisk(risk, index)}
-//                     disabled={savingId === index || removingId === index}
-//                     style={{
-//                       ...acceptButtonStyle,
-//                       opacity:
-//                         savingId === index || removingId === index ? 0.6 : 1,
-//                       cursor:
-//                         savingId === index || removingId === index
-//                           ? "not-allowed"
-//                           : "pointer",
-//                     }}
-//                     onMouseOver={(e) => {
-//                       if (savingId !== index && removingId !== index) {
-//                         e.target.style.backgroundColor = "#218838";
-//                       }
-//                     }}
-//                     onMouseOut={(e) => {
-//                       if (savingId !== index && removingId !== index) {
-//                         e.target.style.backgroundColor = "#28a745";
-//                       }
-//                     }}
-//                   >
-//                     {savingId === index ? "Adding..." : "Accept"}
-//                   </button>
-
-//                   <button
-//                     onClick={() => handleRejectRisk(index)}
-//                     disabled={savingId === index || removingId === index}
-//                     style={{
-//                       ...rejectButtonStyle,
-//                       opacity:
-//                         savingId === index || removingId === index ? 0.6 : 1,
-//                       cursor:
-//                         savingId === index || removingId === index
-//                           ? "not-allowed"
-//                           : "pointer",
-//                     }}
-//                     onMouseOver={(e) => {
-//                       if (savingId !== index && removingId !== index) {
-//                         e.target.style.backgroundColor = "#c82333";
-//                       }
-//                     }}
-//                     onMouseOut={(e) => {
-//                       if (savingId !== index && removingId !== index) {
-//                         e.target.style.backgroundColor = "#dc3545";
-//                       }
-//                     }}
-//                   >
-//                     {removingId === index ? "Removing..." : "Reject"}
-//                   </button>
-
-//                   <button
-//                     onClick={() => handleViewFullRisk(risk, index)}
-//                     disabled={savingId === index || removingId === index}
-//                     style={{
-//                       ...viewButtonStyle,
-//                       opacity:
-//                         savingId === index || removingId === index ? 0.6 : 1,
-//                       cursor:
-//                         savingId === index || removingId === index
-//                           ? "not-allowed"
-//                           : "pointer",
-//                     }}
-//                     onMouseOver={(e) => {
-//                       if (savingId !== index && removingId !== index) {
-//                         e.target.style.backgroundColor = "#0056b3";
-//                       }
-//                     }}
-//                     onMouseOut={(e) => {
-//                       if (savingId !== index && removingId !== index) {
-//                         e.target.style.backgroundColor = "#007bff";
-//                       }
-//                     }}
-//                   >
-//                     View Full Risk
-//                   </button>
-//                 </td>
-//               </tr>
-//             ))}
-//           </tbody>
-//         </table>
-//         {/* Pagination controls */}
-//         {totalPages > 1 && (
-//           <div
-//             style={{
-//               display: "flex",
-//               justifyContent: "center",
-//               marginTop: "10px 0",
-//               gap: "10px",
-//             }}
-//           >
-//             <button
-//               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-//               disabled={currentPage === 1}
-//               style={{
-//                 padding: "8px 14px",
-//                 borderRadius: "6px",
-//                 border: "1px solid #007bff",
-//                 background: currentPage === 1 ? "#e9ecef" : "white",
-//                 color: currentPage === 1 ? "#6c757d" : "#007bff",
-//                 cursor: currentPage === 1 ? "not-allowed" : "pointer",
-//               }}
-//             >
-//               Prev
-//             </button>
-
-//             {[...Array(totalPages).keys()].map((num) => (
-//               <button
-//                 key={num}
-//                 onClick={() => paginate(num + 1)}
-//                 style={{
-//                   padding: "8px 14px",
-//                   borderRadius: "6px",
-//                   border: "1px solid #007bff",
-//                   backgroundColor:
-//                     currentPage === num + 1 ? "#007bff" : "white",
-//                   color: currentPage === num + 1 ? "white" : "#007bff",
-//                   cursor: "pointer",
-//                 }}
-//               >
-//                 {num + 1}
-//               </button>
-//             ))}
-
-//             <button
-//               onClick={() =>
-//                 setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-//               }
-//               disabled={currentPage === totalPages}
-//               style={{
-//                 padding: "8px 14px",
-//                 borderRadius: "6px",
-//                 border: "1px solid #007bff",
-//                 background: currentPage === totalPages ? "#e9ecef" : "white",
-//                 color: currentPage === totalPages ? "#6c757d" : "#007bff",
-//                 cursor: currentPage === totalPages ? "not-allowed" : "pointer",
-//               }}
-//             >
-//               Next
-//             </button>
-//           </div>
-//         )}
-//       </div>
-
-//       {/* Confirmation Dialog */}
-//       {showConfirmDialog && (
-//         <div
-//           style={{
-//             position: "fixed",
-//             top: 0,
-//             left: 0,
-//             width: "100%",
-//             height: "100%",
-//             backgroundColor: "rgba(0, 0, 0, 0.5)",
-//             display: "flex",
-//             alignItems: "center",
-//             justifyContent: "center",
-//             zIndex: 1000,
-//           }}
-//         >
-//           <div
-//             style={{
-//               backgroundColor: "white",
-//               padding: "30px",
-//               borderRadius: "8px",
-//               boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-//               maxWidth: "400px",
-//               textAlign: "center",
-//             }}
-//           >
-//             <h3 style={{ marginBottom: "20px", color: "#333" }}>
-//               Confirm Rejection
-//             </h3>
-//             <p
-//               style={{
-//                 marginBottom: "25px",
-//                 color: "#666",
-//                 lineHeight: "1.5",
-//               }}
-//             >
-//               Are you sure you want to remove Risk Template {riskToRemove + 1}{" "}
-//               from view? This action cannot be undone.
-//             </p>
-//             <div>
-//               <button
-//                 onClick={cancelRejectRisk}
-//                 style={{
-//                   ...buttonBaseStyle,
-//                   backgroundColor: "#6c757d",
-//                   color: "white",
-//                   marginRight: "10px",
-//                 }}
-//               >
-//                 Cancel
-//               </button>
-//               <button
-//                 onClick={confirmRejectRisk}
-//                 style={{
-//                   ...buttonBaseStyle,
-//                   backgroundColor: "#dc3545",
-//                   color: "white",
-//                 }}
-//               >
-//                 Remove
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-//       )}
-
-//       {/* View Full Risk Modal */}
-//       {showModal && selectedRisk && (
-//         <div
-//           style={{
-//             position: "fixed",
-//             top: 0,
-//             left: 0,
-//             width: "100%",
-//             height: "100%",
-//             backgroundColor: "rgba(0, 0, 0, 0.5)",
-//             display: "flex",
-//             alignItems: "center",
-//             justifyContent: "center",
-//             zIndex: 1000,
-//             overflow: "auto",
-//             padding: "20px",
-//           }}
-//         >
-//           <div
-//             style={{
-//               backgroundColor: "white",
-//               padding: "30px",
-//               borderRadius: "8px",
-//               boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-//               maxWidth: "800px",
-//               width: "100%",
-//               maxHeight: "90vh",
-//               overflow: "auto",
-//             }}
-//           >
-//             <div
-//               style={{
-//                 position: "sticky",
-//                 top: -30,
-//                 background: "#fff",
-//                 zIndex: 10,
-//                 display: "flex",
-//                 justifyContent: "space-between",
-//                 alignItems: "center",
-//                 marginBottom: "25px",
-//                 marginTop: "-30px",
-//                 padding: "20px",
-//                 borderBottom: "2px solid #eee",
-//                 paddingBottom: "15px",
-//                 width: "100%",
-//               }}
-//             >
-//               {" "}
-//               <h3 style={{ margin: 0, color: "#333", fontSize: "1.5rem" }}>
-//                 Sample Risk {selectedRisk.serialNo} - Full Details
-//               </h3>
-//               <button
-//                 onClick={closeModal}
-//                 style={{
-//                   background: "none",
-//                   border: "none",
-//                   fontSize: "24px",
-//                   cursor: "pointer",
-//                   color: "#666",
-//                   padding: "5px",
-//                 }}
-//               >
-//                 ×
-//               </button>
-//             </div>
-
-//             <div
-//               style={{
-//                 display: "grid",
-//                 gridTemplateColumns: "1fr 1fr",
-//                 gap: "20px",
-//                 fontSize: "14px",
-//               }}
-//             >
-//               {[
-//                 { label: "Department", value: selectedRisk.department },
-//                 { label: "Risk Type", value: selectedRisk.riskType },
-//                 { label: "Asset Type", value: selectedRisk.assetType },
-//                 { label: "Asset", value: selectedRisk.asset },
-//                 // ✅ Move Risk Description here (before Risk Score)
-//                 {
-//                   label: "Risk Description",
-//                   value: selectedRisk.riskDescription,
-//                 },
-
-//                 { label: "Risk Score", value: selectedRisk.riskScore },
-//                 { label: "Risk Level", value: selectedRisk.riskLevel },
-//                 { label: "Likelihood", value: selectedRisk.probability },
-//                 {
-//                   label: "Likelihood After Treatment",
-//                   value: selectedRisk.likelihoodAfterTreatment,
-//                 },
-//                 {
-//                   label: "Impact After Treatment",
-//                   value: selectedRisk.impactAfterTreatment,
-//                 },
-//               ].map((item, idx) => (
-//                 <div
-//                   key={idx}
-//                   style={{
-//                     padding: "12px",
-//                     backgroundColor: "#f8f9fa",
-//                     borderRadius: "4px",
-//                     border: "1px solid #e9ecef",
-//                   }}
-//                 >
-//                   <div
-//                     style={{
-//                       fontWeight: "600",
-//                       marginBottom: "5px",
-//                       color: "#495057",
-//                     }}
-//                   >
-//                     {item.label}:
-//                   </div>
-//                   <div style={{ color: "#333", lineHeight: "1.5" }}>
-//                     {item.value || "N/A"}
-//                   </div>
-//                 </div>
-//               ))}
-//             </div>
-
-//             <div style={{ display: "flex", gap: "15px", marginTop: "20px" }}>
-//               <div
-//                 style={{
-//                   flex: 1,
-//                   padding: "12px",
-//                   backgroundColor: "#f8f9fa",
-//                   borderRadius: "4px",
-//                   border: "1px solid #e9ecef",
-//                 }}
-//               >
-//                 <div
-//                   style={{
-//                     fontWeight: "600",
-//                     marginBottom: "8px",
-//                     color: "#495057",
-//                   }}
-//                 >
-//                   Existing Controls:
-//                 </div>
-//                 <div style={{ color: "#333", lineHeight: "1.5" }}>
-//                   {selectedRisk.existingControls || "None specified"}
-//                 </div>
-//               </div>
-
-//               <div
-//                 style={{
-//                   flex: 1,
-//                   padding: "12px",
-//                   backgroundColor: "#f8f9fa",
-//                   borderRadius: "4px",
-//                   border: "1px solid #e9ecef",
-//                 }}
-//               >
-//                 <div
-//                   style={{
-//                     fontWeight: "600",
-//                     marginBottom: "8px",
-//                     color: "#495057",
-//                   }}
-//                 >
-//                   Risk Owner:
-//                 </div>
-//                 <div style={{ color: "#333", lineHeight: "1.5" }}>
-//                   {selectedRisk.riskOwner || "Unassigned"}
-//                 </div>
-//               </div>
-//             </div>
-
-//             <div style={{ marginTop: "20px" }}>
-//               <div
-//                 style={{
-//                   padding: "12px",
-//                   backgroundColor: "#f8f9fa",
-//                   borderRadius: "4px",
-//                   border: "1px solid #e9ecef",
-//                 }}
-//               >
-//                 <div
-//                   style={{
-//                     fontWeight: "600",
-//                     marginBottom: "8px",
-//                     color: "#495057",
-//                   }}
-//                 >
-//                   Risk Treatment Plan:
-//                 </div>
-//                 <div style={{ color: "#333", lineHeight: "1.5" }}>
-//                   {selectedRisk.riskTreatmentPlan ||
-//                     "No treatment plan specified"}
-//                 </div>
-//               </div>
-//             </div>
-
-//             <div
-//               style={{
-//                 marginTop: "25px",
-//                 display: "flex",
-//                 justifyContent: "flex-end",
-//               }}
-//             >
-//               <button
-//                 onClick={closeModal}
-//                 style={{
-//                   ...buttonBaseStyle,
-//                   backgroundColor: "#ff0000ff",
-//                   color: "white",
-//                 }}
-//               >
-//                 Close
-//               </button>
-//               <button
-//                 onClick={() =>
-//                   handleAcceptRisk(selectedRisk, selectedRisk.serialNo - 1)
-//                 }
-//                 style={{
-//                   ...buttonBaseStyle,
-//                   backgroundColor: "#007bff",
-//                   color: "white",
-//                 }}
-//               >
-//                 Accept
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-//       )}
-//     </div>
-//   );
-// };
-
-// export default RiskTemplateTable;
-
-
-
+// RiskTemplateTable.jsx
 import React, { useEffect, useState } from "react";
 import { useHistory } from "react-router-dom";
 import templateRiskService from "../services/templateRiskService";
@@ -744,33 +6,99 @@ import riskService from "../services/riskService";
 
 const RiskTemplateTable = () => {
   const [risks, setRisks] = useState([]);
-  const [savingId, setSavingId] = useState(null);
-  const [removingId, setRemovingId] = useState(null);
+  const [savingId, setSavingId] = useState(null); // original-array index while saving
+  const [removingId, setRemovingId] = useState(null); // original-array index while removing
   const [selectedRisk, setSelectedRisk] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [riskToRemove, setRiskToRemove] = useState(null);
+  const [riskToRemove, setRiskToRemove] = useState(null); // original-array index pending delete
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedDepartment, setSelectedDepartment] = useState("All");
   const risksPerPage = 5;
   const history = useHistory();
 
   useEffect(() => {
     const fetchData = async () => {
-      const data = await templateRiskService.getAllTemplateRisks();
-      setRisks(data);
+      try {
+        const data = await templateRiskService.getAllTemplateRisks();
+        setRisks(data || []);
+      } catch (err) {
+        console.error("Failed to load template risks:", err);
+      }
     };
     fetchData();
   }, []);
 
-  // Handle Accept (Add Risk)
-  const handleAcceptRisk = async (risk, index) => {
-    try {
-      setSavingId(index);
+  // derive department list from original risks
+  const departments = [
+    "All",
+    ...new Set(risks.map((r) => r.department).filter(Boolean)),
+  ];
 
+  // filtered list used for pagination & display
+  const filteredRisks =
+    selectedDepartment === "All"
+      ? risks
+      : risks.filter((r) => r.department === selectedDepartment);
+
+  // pagination indexes are based on filteredRisks
+  const indexOfLastRisk = currentPage * risksPerPage;
+  const indexOfFirstRisk = indexOfLastRisk - risksPerPage;
+  const currentRisks = filteredRisks.slice(indexOfFirstRisk, indexOfLastRisk);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredRisks.length / risksPerPage)
+  );
+
+  // Helpers
+  const getRiskLevelColor = (riskLevel) => {
+    switch (String(riskLevel || "").toLowerCase()) {
+      case "high":
+        return "#ffcccb";
+      case "medium":
+        return "#ffffcc";
+      case "low":
+        return "#ccffcc";
+      default:
+        return "#f0f0f0";
+    }
+  };
+
+  // Accept (save) a risk — accepts originalIndex (index inside `risks`)
+  const handleAcceptRisk = async (risk, originalIndex) => {
+    try {
+      setSavingId(originalIndex);
+
+      // Fetch existing risks from backend
       const existingRisks = await riskService.getAllRisks();
+
+      // Combine saved risks + template risks (excluding the current one)
+      const allRisks = [
+        ...existingRisks,
+        ...risks.filter((_, idx) => idx !== originalIndex),
+      ];
+
+      // Check for duplicate descriptions (case-insensitive, trimmed)
+      const duplicate = allRisks.some(
+        (r) =>
+          r.riskDescription?.trim().toLowerCase() ===
+          risk.riskDescription?.trim().toLowerCase()
+      );
+
+      if (duplicate) {
+        const proceed = window.confirm(
+          "A risk with the same description already exists! Do you want to continue adding it?"
+        );
+        if (!proceed) {
+          setSavingId(null);
+          return; // stop if user cancels
+        }
+      }
+
+      // Generate new riskId
       const currentYear = new Date().getFullYear();
       const maxNumber = existingRisks.reduce((max, r) => {
-        const match = r.riskId.match(/RR-\d{4}-(\d+)/);
+        const match = r.riskId && r.riskId.match(/RR-\d{4}-(\d+)/);
         if (match) {
           const num = parseInt(match[1], 10);
           return num > max ? num : max;
@@ -783,7 +111,7 @@ const RiskTemplateTable = () => {
       const newRisk = {
         ...risk,
         riskId: nextRiskId,
-        date:new Date().toISOString().split("T")[0],
+        date: new Date().toISOString().split("T")[0],
         probability: String(risk.probability),
         numberOfDays: String(risk.numberOfDays),
         likelihoodAfterTreatment: String(risk.likelihoodAfterTreatment),
@@ -800,31 +128,48 @@ const RiskTemplateTable = () => {
       };
 
       await riskService.saveRisk(newRisk);
-      alert(`Risk template ${index + 1} accepted and added successfully!`);
+
+      alert(
+        `Risk template ${originalIndex + 1} accepted and added successfully!`
+      );
     } catch (error) {
       console.error(error);
-      alert(`Failed to accept risk template: ${error.message}`);
+      alert(`Failed to accept risk template: ${error?.message || error}`);
     } finally {
       setSavingId(null);
     }
   };
 
-  // Handle Reject (Remove Risk)
-  const handleRejectRisk = (index) => {
-    setRiskToRemove(index);
+  // Trigger reject: open confirm dialog using originalIndex
+  const handleRejectRisk = (originalIndex) => {
+    setRiskToRemove(originalIndex);
     setShowConfirmDialog(true);
   };
 
+  // Confirm removal — remove by original index
   const confirmRejectRisk = () => {
+    if (riskToRemove == null) return;
     setRemovingId(riskToRemove);
+
+    // small delay to show removing animation + UX
     setTimeout(() => {
-      const newRisks = risks.filter((_, index) => index !== riskToRemove);
-      setRisks(newRisks);
+      setRisks((prev) => prev.filter((_, idx) => idx !== riskToRemove));
       setRemovingId(null);
       setShowConfirmDialog(false);
-      setRiskToRemove(null);
       alert(`Risk template ${riskToRemove + 1} has been removed from view.`);
-    }, 500);
+      setRiskToRemove(null);
+
+      // ensure page remains valid after deletion
+      const newFilteredLength =
+        selectedDepartment === "All"
+          ? risks.length - 1
+          : risks.filter((r) => r.department === selectedDepartment).length - 1;
+      const newTotalPages = Math.max(
+        1,
+        Math.ceil(newFilteredLength / risksPerPage)
+      );
+      if (currentPage > newTotalPages) setCurrentPage(newTotalPages);
+    }, 400);
   };
 
   const cancelRejectRisk = () => {
@@ -832,9 +177,13 @@ const RiskTemplateTable = () => {
     setRiskToRemove(null);
   };
 
-  // Handle View Full Risk
-  const handleViewFullRisk = (risk, index) => {
-    setSelectedRisk({ ...risk, serialNo: index + 1 });
+  // Open modal for full view — store originalIndex so modal actions map correctly
+  const handleViewFullRisk = (risk, originalIndex) => {
+    setSelectedRisk({
+      ...risk,
+      serialNo: originalIndex + 1,
+      serialIndex: originalIndex,
+    });
     setShowModal(true);
   };
 
@@ -843,31 +192,21 @@ const RiskTemplateTable = () => {
     setSelectedRisk(null);
   };
 
-  // Get risk level color
-  const getRiskLevelColor = (riskLevel) => {
-    switch (riskLevel?.toLowerCase()) {
-      case "high":
-        return "#ffcccb";
-      case "medium":
-        return "#ffffcc";
-      case "low":
-        return "#ccffcc";
-      default:
-        return "#f0f0f0";
-    }
+  // (Optional) pagination controls helpers
+  const gotoPage = (pageNumber) => {
+    const p = Math.max(1, Math.min(totalPages, pageNumber));
+    setCurrentPage(p);
   };
 
-  // Button styles
+  // Styles (kept inline for simplicity — you can move to CSS)
   const buttonBaseStyle = {
-    padding: "8px 16px",
+    padding: "8px 12px",
     border: "none",
-    borderRadius: "4px",
+    borderRadius: "6px",
     cursor: "pointer",
     fontSize: "14px",
-    fontWeight: "500",
-    margin: "0 4px",
-    minWidth: "70px",
-    transition: "all 0.2s ease",
+    fontWeight: 600,
+    margin: "0 6px",
   };
 
   const acceptButtonStyle = {
@@ -875,20 +214,17 @@ const RiskTemplateTable = () => {
     backgroundColor: "#28a745",
     color: "white",
   };
-
   const rejectButtonStyle = {
     ...buttonBaseStyle,
     backgroundColor: "#dc3545",
     color: "white",
   };
-
   const viewButtonStyle = {
     ...buttonBaseStyle,
     backgroundColor: "#007bff",
     color: "white",
   };
 
-  // Fixed "Back to Dashboard" button styles (NEW)
   const backBtnStyle = {
     position: "fixed",
     top: "20px",
@@ -908,338 +244,284 @@ const RiskTemplateTable = () => {
     zIndex: 99,
   };
 
-  const handleBackBtnMouseEnter = (e) => {
-    e.target.style.backgroundColor = "#0046a3";
-    e.target.style.boxShadow = "0 6px 12px rgba(0, 70, 163, 0.5)";
-    e.target.style.transform = "translateY(-2px)";
-  };
-
-  const handleBackBtnMouseLeave = (e) => {
-    e.target.style.backgroundColor = "#005FCC";
-    e.target.style.boxShadow = "0 4px 8px rgba(0, 95, 204, 0.3)";
-    e.target.style.transform = "translateY(0)";
-  };
-
-  // Main table styles
   const tableStyles = {
     width: "100%",
     borderCollapse: "collapse",
     fontSize: "14px",
     backgroundColor: "white",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
   };
 
   const headerStyles = {
     backgroundColor: "#f8f9fa",
-    padding: "16px 12px",
+    padding: "12px",
     textAlign: "center",
-    fontWeight: "600",
-    fontSize: "15px",
-    border: "2px solid #dee2e6",
+    fontWeight: "700",
+    fontSize: "14px",
+    border: "1px solid #e9ecef",
     position: "sticky",
     top: 0,
-    zIndex: 10,
+    zIndex: 5,
   };
 
   const cellStyles = {
     padding: "12px",
-    border: "1px solid #dee2e6",
-    textAlign: "left",
+    border: "1px solid #e9ecef",
     verticalAlign: "top",
-  };
-
-  // Pagination logic
-  const indexOfLastRisk = currentPage * risksPerPage;
-  const indexOfFirstRisk = indexOfLastRisk - risksPerPage;
-  const currentRisks = risks.slice(indexOfFirstRisk, indexOfLastRisk);
-  const totalPages = Math.ceil(risks.length / risksPerPage);
-
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
-  // NEW Pagination button styles
-  const paginationButtonStyle = {
-    padding: "8px 14px",
-    borderRadius: "6px",
-    border: "1px solid #007bff",
-    margin: "0 4px",
-    cursor: "pointer",
-    fontWeight: "600",
-    backgroundColor: "white",
-    color: "#007bff",
-    userSelect: "none",
-    transition: "all 0.2s ease",
-  };
-
-  const activePageStyle = {
-    backgroundColor: "#007bff",
-    color: "white",
-    cursor: "default",
-  };
-
-  const disabledButtonStyle = {
-    backgroundColor: "#e9ecef",
-    color: "#6c757d",
-    cursor: "not-allowed",
-    border: "1px solid #dee2e6",
   };
 
   return (
     <div
       style={{
         padding: "20px",
-        backgroundColor: "#f8f9fa",
+        backgroundColor: "#f7f9fb",
         minHeight: "100vh",
       }}
     >
-      {/* NEW: Back to Dashboard Button */}
       <button
         style={backBtnStyle}
         onClick={() => history.push("/risk-assessment")}
-        onMouseEnter={handleBackBtnMouseEnter}
-        onMouseLeave={handleBackBtnMouseLeave}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = "#0046a3";
+          e.currentTarget.style.transform = "translateY(-2px)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = "#005FCC";
+          e.currentTarget.style.transform = "translateY(0)";
+        }}
       >
         ← Back to Dashboard
       </button>
 
-      <h2
-        style={{
-          fontSize: "2rem",
-          fontWeight: "bold",
-          marginBottom: "20px",
-          textAlign: "center",
-          color: "#333",
-        }}
-      >
+      <h2 style={{ textAlign: "center", marginBottom: "18px", color: "#222" }}>
         Sample Risks
       </h2>
+
+      <div
+        style={{
+          marginBottom: "18px",
+          display: "flex",
+          justifyContent: "center",
+          gap: "12px",
+          alignItems: "center",
+        }}
+      >
+        <label style={{ fontWeight: 600 }}>Filter by Department:</label>
+        <select
+          value={selectedDepartment}
+          onChange={(e) => {
+            setSelectedDepartment(e.target.value);
+            setCurrentPage(1);
+          }}
+          style={{
+            padding: "8px 12px",
+            borderRadius: "6px",
+            border: "1px solid #ccc",
+            cursor: "pointer",
+          }}
+        >
+          {departments.map((d, i) => (
+            <option key={i} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div
         style={{
           overflowX: "auto",
           backgroundColor: "white",
           borderRadius: "8px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+          padding: "6px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
         }}
       >
         <table style={tableStyles}>
           <thead>
             <tr>
-              <th style={{ ...headerStyles, width: "80px" }}>Risk ID</th>
-              <th style={{ ...headerStyles, width: "45%" }}>
+              <th style={{ ...headerStyles, width: "80px" }}>#</th>
+              <th style={{ ...headerStyles, minWidth: "45%" }}>
                 Risk Description
               </th>
-              <th style={{ ...headerStyles, width: "100px" }}>Risk Score</th>
+              <th style={{ ...headerStyles, width: "120px" }}>Department</th>
+              <th style={{ ...headerStyles, width: "120px" }}>Risk Score</th>
               <th style={{ ...headerStyles, width: "120px" }}>Risk Level</th>
               <th
                 style={{
                   ...headerStyles,
-                  width: "280px",
-                  backgroundColor: "#e3f2fd",
+                  minWidth: "260px",
+                  backgroundColor: "#e9f2ff",
                 }}
               >
                 Actions
               </th>
             </tr>
           </thead>
+
           <tbody>
-            {currentRisks.map((risk, index) => (
-              <tr
-                key={index}
-                style={{
-                  backgroundColor: index % 2 === 0 ? "#ffffff" : "#f9f9f9",
-                  opacity: removingId === index ? 0.3 : 1,
-                  transform: removingId === index ? "scale(0.98)" : "scale(1)",
-                  transition: "all 0.3s ease",
-                }}
-              >
-                {/* Risk ID (Serial Number) */}
-                <td
-                  style={{
-                    ...cellStyles,
-                    textAlign: "center",
-                    fontWeight: "600",
-                  }}
-                >
-                  {indexOfFirstRisk + index + 1}
-                </td>
-
-                {/* Risk Description */}
-                <td style={{ ...cellStyles, lineHeight: "1.5" }}>
-                  {risk.riskDescription}
-                </td>
-
-                {/* Risk Score */}
-                <td
-                  style={{
-                    ...cellStyles,
-                    textAlign: "center",
-                    fontWeight: "600",
-                    fontSize: "16px",
-                  }}
-                >
-                  {risk.riskScore}
-                </td>
-
-                {/* Risk Level */}
-                <td
-                  style={{
-                    ...cellStyles,
-                    textAlign: "center",
-                    backgroundColor: getRiskLevelColor(risk.riskLevel),
-                    fontWeight: "600",
-                    fontSize: "14px",
-                  }}
-                >
-                  {risk.riskLevel}
-                </td>
-
-                {/* Action Buttons */}
-                <td
-                  style={{
-                    ...cellStyles,
-                    textAlign: "center",
-                    backgroundColor: "#f8f9fa",
-                  }}
-                >
-                  <button
-                    onClick={() => handleAcceptRisk(risk, index)}
-                    disabled={savingId === index || removingId === index}
-                    style={{
-                      ...acceptButtonStyle,
-                      opacity:
-                        savingId === index || removingId === index ? 0.6 : 1,
-                      cursor:
-                        savingId === index || removingId === index
-                          ? "not-allowed"
-                          : "pointer",
-                    }}
-                    onMouseOver={(e) => {
-                      if (savingId !== index && removingId !== index) {
-                        e.target.style.backgroundColor = "#218838";
-                      }
-                    }}
-                    onMouseOut={(e) => {
-                      if (savingId !== index && removingId !== index) {
-                        e.target.style.backgroundColor = "#28a745";
-                      }
-                    }}
-                  >
-                    {savingId === index ? "Adding..." : "Accept"}
-                  </button>
-
-                  <button
-                    onClick={() => handleRejectRisk(index)}
-                    disabled={savingId === index || removingId === index}
-                    style={{
-                      ...rejectButtonStyle,
-                      opacity:
-                        savingId === index || removingId === index ? 0.6 : 1,
-                      cursor:
-                        savingId === index || removingId === index
-                          ? "not-allowed"
-                          : "pointer",
-                    }}
-                    onMouseOver={(e) => {
-                      if (savingId !== index && removingId !== index) {
-                        e.target.style.backgroundColor = "#c82333";
-                      }
-                    }}
-                    onMouseOut={(e) => {
-                      if (savingId !== index && removingId !== index) {
-                        e.target.style.backgroundColor = "#dc3545";
-                      }
-                    }}
-                  >
-                    {removingId === index ? "Removing..." : "Reject"}
-                  </button>
-
-                  <button
-                    onClick={() => handleViewFullRisk(risk, index)}
-                    disabled={savingId === index || removingId === index}
-                    style={{
-                      ...viewButtonStyle,
-                      opacity:
-                        savingId === index || removingId === index ? 0.6 : 1,
-                      cursor:
-                        savingId === index || removingId === index
-                          ? "not-allowed"
-                          : "pointer",
-                    }}
-                    onMouseOver={(e) => {
-                      if (savingId !== index && removingId !== index) {
-                        e.target.style.backgroundColor = "#0056b3";
-                      }
-                    }}
-                    onMouseOut={(e) => {
-                      if (savingId !== index && removingId !== index) {
-                        e.target.style.backgroundColor = "#007bff";
-                      }
-                    }}
-                  >
-                    View Full Risk
-                  </button>
+            {currentRisks.length === 0 ? (
+              <tr>
+                <td colSpan={6} style={{ ...cellStyles, textAlign: "center" }}>
+                  No risks to display.
                 </td>
               </tr>
-            ))}
+            ) : (
+              currentRisks.map((risk, displayIndex) => {
+                // original index in the full `risks` array (keeps numbering consistent globally)
+                const originalIndex = risks.indexOf(risk);
+                const serialNo =
+                  originalIndex >= 0
+                    ? originalIndex + 1
+                    : indexOfFirstRisk + displayIndex + 1;
+                const isSaving = savingId === originalIndex;
+                const isRemoving = removingId === originalIndex;
+
+                return (
+                  <tr
+                    key={serialNo}
+                    style={{
+                      backgroundColor:
+                        serialNo % 2 === 0 ? "#ffffff" : "#fbfcfd",
+                      opacity: isRemoving ? 0.35 : 1,
+                      transform: isRemoving ? "scale(0.995)" : "scale(1)",
+                      transition: "all 0.25s ease",
+                    }}
+                  >
+                    <td
+                      style={{
+                        ...cellStyles,
+                        textAlign: "center",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {serialNo}
+                    </td>
+
+                    <td style={{ ...cellStyles, lineHeight: "1.4" }}>
+                      {risk.riskDescription || risk.description || "N/A"}
+                    </td>
+
+                    <td style={{ ...cellStyles, textAlign: "center" }}>
+                      {risk.department || "N/A"}
+                    </td>
+
+                    <td
+                      style={{
+                        ...cellStyles,
+                        textAlign: "center",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {risk.riskScore ?? "—"}
+                    </td>
+
+                    <td
+                      style={{
+                        ...cellStyles,
+                        textAlign: "center",
+                        backgroundColor: getRiskLevelColor(risk.riskLevel),
+                        fontWeight: 700,
+                      }}
+                    >
+                      {risk.riskLevel || "—"}
+                    </td>
+
+                    <td
+                      style={{
+                        ...cellStyles,
+                        textAlign: "center",
+                        backgroundColor: "#fafcff",
+                      }}
+                    >
+                      <button
+                        onClick={() => handleAcceptRisk(risk, originalIndex)}
+                        disabled={isSaving || isRemoving}
+                        style={{
+                          ...acceptButtonStyle,
+                          opacity: isSaving || isRemoving ? 0.6 : 1,
+                          cursor:
+                            isSaving || isRemoving ? "not-allowed" : "pointer",
+                        }}
+                      >
+                        {isSaving ? "Adding..." : "Accept"}
+                      </button>
+
+                      <button
+                        onClick={() => handleRejectRisk(originalIndex)}
+                        disabled={isSaving || isRemoving}
+                        style={{
+                          ...rejectButtonStyle,
+                          opacity: isSaving || isRemoving ? 0.6 : 1,
+                          cursor:
+                            isSaving || isRemoving ? "not-allowed" : "pointer",
+                        }}
+                      >
+                        {isRemoving ? "Removing..." : "Reject"}
+                      </button>
+
+                      <button
+                        onClick={() => handleViewFullRisk(risk, originalIndex)}
+                        disabled={isSaving || isRemoving}
+                        style={{
+                          ...viewButtonStyle,
+                          opacity: isSaving || isRemoving ? 0.6 : 1,
+                          cursor:
+                            isSaving || isRemoving ? "not-allowed" : "pointer",
+                        }}
+                      >
+                        View Full Risk
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
 
-        {/* NEW: Improved Pagination controls */}
+        {/* Pagination */}
         {totalPages > 1 && (
           <div
             style={{
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
-              padding: "20px",
+              padding: "16px",
               gap: "8px",
               flexWrap: "wrap",
             }}
           >
             <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              onClick={() => gotoPage(currentPage - 1)}
               disabled={currentPage === 1}
               style={{
-                ...paginationButtonStyle,
-                ...(currentPage === 1 ? disabledButtonStyle : {}),
-              }}
-              onMouseEnter={(e) => {
-                if (currentPage !== 1) {
-                  e.target.style.backgroundColor = "#0056b3";
-                  e.target.style.color = "white";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (currentPage !== 1) {
-                  e.target.style.backgroundColor = "white";
-                  e.target.style.color = "#007bff";
-                }
+                padding: "8px 12px",
+                borderRadius: "6px",
+                border: "1px solid #cad9f7",
+                backgroundColor: currentPage === 1 ? "#f0f2f5" : "white",
+                cursor: currentPage === 1 ? "not-allowed" : "pointer",
               }}
             >
               ← Prev
             </button>
 
-            {[...Array(totalPages).keys()].map((num) => {
-              const pageNum = num + 1;
+            {Array.from({ length: totalPages }, (_, i) => {
+              const pageNum = i + 1;
               const isActive = pageNum === currentPage;
               return (
                 <button
                   key={pageNum}
-                  onClick={() => paginate(pageNum)}
-                  style={{
-                    ...paginationButtonStyle,
-                    ...(isActive ? activePageStyle : {}),
-                  }}
+                  onClick={() => gotoPage(pageNum)}
                   disabled={isActive}
-                  onMouseEnter={(e) => {
-                    if (!isActive) {
-                      e.target.style.backgroundColor = "#e7f1ff";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) {
-                      e.target.style.backgroundColor = "white";
-                    }
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid #007bff",
+                    backgroundColor: isActive ? "#007bff" : "white",
+                    color: isActive ? "white" : "#007bff",
+                    cursor: isActive ? "default" : "pointer",
+                    fontWeight: 700,
                   }}
                 >
                   {pageNum}
@@ -1248,25 +530,15 @@ const RiskTemplateTable = () => {
             })}
 
             <button
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-              }
+              onClick={() => gotoPage(currentPage + 1)}
               disabled={currentPage === totalPages}
               style={{
-                ...paginationButtonStyle,
-                ...(currentPage === totalPages ? disabledButtonStyle : {}),
-              }}
-              onMouseEnter={(e) => {
-                if (currentPage !== totalPages) {
-                  e.target.style.backgroundColor = "#0056b3";
-                  e.target.style.color = "white";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (currentPage !== totalPages) {
-                  e.target.style.backgroundColor = "white";
-                  e.target.style.color = "#007bff";
-                }
+                padding: "8px 12px",
+                borderRadius: "6px",
+                border: "1px solid #cad9f7",
+                backgroundColor:
+                  currentPage === totalPages ? "#f0f2f5" : "white",
+                cursor: currentPage === totalPages ? "not-allowed" : "pointer",
               }}
             >
               Next →
@@ -1275,8 +547,8 @@ const RiskTemplateTable = () => {
         )}
       </div>
 
-      {/* Confirmation Dialog */}
-      {showConfirmDialog && (
+      {/* Confirm dialog for removal */}
+      {showConfirmDialog && typeof riskToRemove === "number" && (
         <div
           style={{
             position: "fixed",
@@ -1284,44 +556,36 @@ const RiskTemplateTable = () => {
             left: 0,
             width: "100%",
             height: "100%",
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            backgroundColor: "rgba(0,0,0,0.45)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 1000,
+            zIndex: 1200,
           }}
         >
           <div
             style={{
-              backgroundColor: "white",
-              padding: "30px",
-              borderRadius: "8px",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-              maxWidth: "400px",
+              background: "white",
+              padding: 28,
+              borderRadius: 8,
+              maxWidth: 480,
               textAlign: "center",
+              boxShadow: "0 6px 24px rgba(0,0,0,0.15)",
             }}
           >
-            <h3 style={{ marginBottom: "20px", color: "#333" }}>
-              Confirm Rejection
-            </h3>
-            <p
-              style={{
-                marginBottom: "25px",
-                color: "#666",
-                lineHeight: "1.5",
-              }}
-            >
+            <h3 style={{ marginTop: 0 }}>Confirm Rejection</h3>
+            <p style={{ color: "#555" }}>
               Are you sure you want to remove Risk Template {riskToRemove + 1}{" "}
               from view? This action cannot be undone.
             </p>
-            <div>
+            <div style={{ marginTop: 18 }}>
               <button
                 onClick={cancelRejectRisk}
                 style={{
                   ...buttonBaseStyle,
                   backgroundColor: "#6c757d",
                   color: "white",
-                  marginRight: "10px",
+                  marginRight: 12,
                 }}
               >
                 Cancel
@@ -1341,65 +605,50 @@ const RiskTemplateTable = () => {
         </div>
       )}
 
-      {/* View Full Risk Modal */}
+      {/* Full view modal */}
       {showModal && selectedRisk && (
         <div
           style={{
             position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.45)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            zIndex: 1000,
-            overflow: "auto",
-            padding: "20px",
+            zIndex: 1300,
+            padding: 20,
           }}
+          onClick={closeModal}
         >
           <div
             style={{
-              backgroundColor: "white",
-              padding: "30px",
-              borderRadius: "8px",
-              boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-              maxWidth: "800px",
               width: "100%",
-              maxHeight: "90vh",
-              overflow: "auto",
+              maxWidth: 800,
+              background: "white",
+              borderRadius: 8,
+              padding: 22,
+              boxShadow: "0 8px 40px rgba(0,0,0,0.18)",
             }}
+            onClick={(e) => e.stopPropagation()}
           >
             <div
               style={{
-                position: "sticky",
-                top: -30,
-                background: "#fff",
-                zIndex: 10,
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: "25px",
-                marginTop: "-30px",
-                padding: "20px",
-                borderBottom: "2px solid #eee",
-                paddingBottom: "15px",
-                width: "100%",
+                marginBottom: 12,
               }}
             >
-              <h3 style={{ margin: 0, color: "#333", fontSize: "1.5rem" }}>
+              <h3 style={{ margin: 0 }}>
                 Sample Risk {selectedRisk.serialNo} - Full Details
               </h3>
               <button
                 onClick={closeModal}
                 style={{
-                  background: "none",
                   border: "none",
-                  fontSize: "24px",
+                  background: "transparent",
+                  fontSize: 22,
                   cursor: "pointer",
-                  color: "#666",
-                  padding: "5px",
                 }}
               >
                 ×
@@ -1410,8 +659,7 @@ const RiskTemplateTable = () => {
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",
-                gap: "20px",
-                fontSize: "14px",
+                gap: 14,
               }}
             >
               {[
@@ -1421,7 +669,8 @@ const RiskTemplateTable = () => {
                 { label: "Asset", value: selectedRisk.asset },
                 {
                   label: "Risk Description",
-                  value: selectedRisk.riskDescription,
+                  value:
+                    selectedRisk.riskDescription || selectedRisk.description,
                 },
                 { label: "Risk Score", value: selectedRisk.riskScore },
                 { label: "Risk Level", value: selectedRisk.riskLevel },
@@ -1434,109 +683,31 @@ const RiskTemplateTable = () => {
                   label: "Impact After Treatment",
                   value: selectedRisk.impactAfterTreatment,
                 },
-              ].map((item, idx) => (
+              ].map((item, i) => (
                 <div
-                  key={idx}
+                  key={i}
                   style={{
-                    padding: "12px",
-                    backgroundColor: "#f8f9fa",
-                    borderRadius: "4px",
-                    border: "1px solid #e9ecef",
+                    padding: 12,
+                    background: "#f8f9fb",
+                    borderRadius: 6,
+                    border: "1px solid #eef2f6",
                   }}
                 >
                   <div
-                    style={{
-                      fontWeight: "600",
-                      marginBottom: "5px",
-                      color: "#495057",
-                    }}
+                    style={{ fontWeight: 700, marginBottom: 6, color: "#333" }}
                   >
                     {item.label}:
                   </div>
-                  <div style={{ color: "#333", lineHeight: "1.5" }}>
-                    {item.value || "N/A"}
-                  </div>
+                  <div style={{ color: "#222" }}>{item.value ?? "N/A"}</div>
                 </div>
               ))}
             </div>
 
-            <div style={{ display: "flex", gap: "15px", marginTop: "20px" }}>
-              <div
-                style={{
-                  flex: 1,
-                  padding: "12px",
-                  backgroundColor: "#f8f9fa",
-                  borderRadius: "4px",
-                  border: "1px solid #e9ecef",
-                }}
-              >
-                <div
-                  style={{
-                    fontWeight: "600",
-                    marginBottom: "8px",
-                    color: "#495057",
-                  }}
-                >
-                  Existing Controls:
-                </div>
-                <div style={{ color: "#333", lineHeight: "1.5" }}>
-                  {selectedRisk.existingControls || "None specified"}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  flex: 1,
-                  padding: "12px",
-                  backgroundColor: "#f8f9fa",
-                  borderRadius: "4px",
-                  border: "1px solid #e9ecef",
-                }}
-              >
-                <div
-                  style={{
-                    fontWeight: "600",
-                    marginBottom: "8px",
-                    color: "#495057",
-                  }}
-                >
-                  Risk Owner:
-                </div>
-                <div style={{ color: "#333", lineHeight: "1.5" }}>
-                  {selectedRisk.riskOwner || "Unassigned"}
-                </div>
-              </div>
-            </div>
-
-            <div style={{ marginTop: "20px" }}>
-              <div
-                style={{
-                  padding: "12px",
-                  backgroundColor: "#f8f9fa",
-                  borderRadius: "4px",
-                  border: "1px solid #e9ecef",
-                }}
-              >
-                <div
-                  style={{
-                    fontWeight: "600",
-                    marginBottom: "8px",
-                    color: "#495057",
-                  }}
-                >
-                  Risk Treatment Plan:
-                </div>
-                <div style={{ color: "#333", lineHeight: "1.5" }}>
-                  {selectedRisk.riskTreatmentPlan ||
-                    "No treatment plan specified"}
-                </div>
-              </div>
-            </div>
-
             <div
               style={{
-                marginTop: "25px",
                 display: "flex",
+                gap: 12,
+                marginTop: 18,
                 justifyContent: "flex-end",
               }}
             >
@@ -1551,9 +722,10 @@ const RiskTemplateTable = () => {
                 Close
               </button>
               <button
-                onClick={() =>
-                  handleAcceptRisk(selectedRisk, selectedRisk.serialNo - 1)
-                }
+                onClick={() => {
+                  handleAcceptRisk(selectedRisk, selectedRisk.serialIndex);
+                  closeModal();
+                }}
                 style={{
                   ...buttonBaseStyle,
                   backgroundColor: "#007bff",

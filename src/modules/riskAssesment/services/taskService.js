@@ -71,8 +71,11 @@ class TaskService {
       },
       credentials: "include",
     });
+
     if (!res.ok) throw new Error("Failed to delete task");
-    return res.json();
+
+    // Backend returns text, not JSON
+    return res.text();
   }
 
   // --- Get task by ID

@@ -15,7 +15,6 @@ export default function TaskManagement({ riskFormData = {} }) {
   const location = useLocation();
   const rawUser = sessionStorage.getItem("user");
   const user = rawUser ? JSON.parse(rawUser) : null;
-
   const today = new Date().toISOString().split("T")[0];
 
   const [tasks, setTasks] = useState([]);
@@ -23,6 +22,9 @@ export default function TaskManagement({ riskFormData = {} }) {
   const [riskOptions, setRiskOptions] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [users, setUsers] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTaskId, setActiveTaskId] = useState(null);
+  const [editingTaskId, setEditingTaskId] = useState(null); // Track edit mode
 
   const [formData, setFormData] = useState({
     riskId: riskFormData.riskId || "",
@@ -40,52 +42,37 @@ export default function TaskManagement({ riskFormData = {} }) {
     APPROVED: "Approved",
   };
 
-  // --- Fetch Departments ---
+  // --- Fetch Departments, Users, Risks, Tasks ---
   useEffect(() => {
     let mounted = true;
     getDepartments()
-      .then(
-        (deptRes) =>
-          mounted && setDepartments(Array.isArray(deptRes) ? deptRes : [])
-      )
-      .catch((err) => console.error("Failed to load departments:", err));
+      .then((d) => mounted && setDepartments(Array.isArray(d) ? d : []))
+      .catch(console.error);
     return () => (mounted = false);
   }, []);
-
-  // --- Fetch Users ---
   useEffect(() => {
     let mounted = true;
     const fetchUsers = async () => {
       try {
-        const userRes = await getAllUsers();
+        const res = await getAllUsers();
         if (!mounted) return;
-        const userList = Array.isArray(userRes) ? userRes : [];
-        setUsers(userList);
-
-        userList.forEach((u) =>
-          console.log(u.name, "department:", u.department)
-        );
+        setUsers(Array.isArray(res) ? res : []);
       } catch (err) {
-        console.error("Failed to load users:", err);
+        console.error(err);
         setUsers([]);
       }
     };
     fetchUsers();
     return () => (mounted = false);
   }, []);
-
-  // --- Fetch Risks ---
   useEffect(() => {
     let mounted = true;
     const fetchRisks = async () => {
       try {
         const risksData = await riskService.getAllRisks();
         const allRisks = Array.isArray(risksData) ? risksData : [];
-        if (!mounted) return;
-        setRisks(allRisks);
-
+        if (!mounted) return setRisks(allRisks);
         if (!user) return setRiskOptions([]);
-
         if (user.role === "risk_manager") {
           setRiskOptions(
             allRisks.map((r) => ({ value: r.riskId, label: r.riskId }))
@@ -96,7 +83,6 @@ export default function TaskManagement({ riskFormData = {} }) {
             (d) => String(d._id) === String(user.department)
           );
           if (!userDept) return setRiskOptions([]);
-
           const deptRisks = allRisks.filter(
             (r) => r.department === userDept.name
           );
@@ -105,7 +91,7 @@ export default function TaskManagement({ riskFormData = {} }) {
           );
         }
       } catch (err) {
-        console.error("Error loading risks:", err);
+        console.error(err);
         setRisks([]);
         setRiskOptions([]);
       }
@@ -113,20 +99,21 @@ export default function TaskManagement({ riskFormData = {} }) {
     fetchRisks();
     return () => (mounted = false);
   }, [user]);
-
-  // --- Fetch Tasks ---
   useEffect(() => {
     let mounted = true;
     const fetchTasks = async () => {
       try {
         const fetchedTasks = await taskService.getAllTasks();
         if (!mounted) return;
-        const filteredTasks = riskFormData.riskId
-          ? fetchedTasks.filter((t) => t.riskId === riskFormData.riskId)
-          : fetchedTasks;
-        setTasks(Array.isArray(filteredTasks) ? filteredTasks : []);
+        setTasks(
+          Array.isArray(fetchedTasks)
+            ? riskFormData.riskId
+              ? fetchedTasks.filter((t) => t.riskId === riskFormData.riskId)
+              : fetchedTasks
+            : []
+        );
       } catch (err) {
-        console.error("Failed to load tasks:", err);
+        console.error(err);
         setTasks([]);
       }
     };
@@ -134,24 +121,16 @@ export default function TaskManagement({ riskFormData = {} }) {
     return () => (mounted = false);
   }, [riskFormData.riskId]);
 
-  // --- Handlers ---
+  // --- Form handlers ---
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    console.log(`[Input Change] name: ${name}, value: ${value}`);
     if (!name) return;
     setFormData((prev) => ({ ...prev, [name]: value }));
-
-    if (name === "department") {
-      console.log(
-        `[Department Change] resetting employee because department changed`
-      );
+    if (name === "department")
       setFormData((prev) => ({ ...prev, department: value, employee: "" }));
-    }
   };
-
   const handleDeptChange = (e) => {
     const { name, value } = e.target;
-    console.log(`[Department Dropdown] Selected department id: ${value}`);
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -160,17 +139,15 @@ export default function TaskManagement({ riskFormData = {} }) {
     }));
   };
 
-  // --- Employee options based on selected department ---
   const empOptions = useMemo(() => {
     const dept = departments?.find((d) => d.name === formData.department)?.id;
-    const options = (users || [])
+    return (users || [])
       .filter((u) => u.department && String(u.department) === String(dept))
       .map((u) => ({ value: u._id, label: u.name }));
-
-    return options;
   }, [users, departments, formData.department]);
 
-  const addTask = async () => {
+  // --- Add / Edit Task ---
+  const saveTask = async () => {
     if (
       !formData.riskId ||
       !formData.department ||
@@ -180,61 +157,99 @@ export default function TaskManagement({ riskFormData = {} }) {
       alert("Please fill all required fields!");
       return;
     }
-
     if (new Date(formData.endDate) < new Date(formData.startDate)) {
       alert("End date cannot be before start date.");
       return;
     }
 
     const relatedRisk = risks.find((r) => r.riskId === formData.riskId);
-    if (relatedRisk) {
-      if (
-        formData.startDate < relatedRisk.startDate ||
-        formData.endDate > relatedRisk.endDate
-      ) {
-        alert(
-          `Task dates must be within the risk period (${relatedRisk.startDate} → ${relatedRisk.endDate})`
-        );
-        return;
-      }
+    if (
+      relatedRisk &&
+      (formData.startDate < relatedRisk.startDate ||
+        formData.endDate > relatedRisk.endDate)
+    ) {
+      alert(
+        `Task dates must be within the risk period (${relatedRisk.startDate} → ${relatedRisk.endDate})`
+      );
+      return;
     }
 
-    const existingTasks = tasks.filter((t) => t.riskId === formData.riskId);
-    const newTaskId = `T-${existingTasks.length + 1}`;
+    // let employeeId = formData.employee || "";
+    // let employeeName = formData.employeeName || "";
+    // if (employeeId && !employeeName) {
+    //   console.log(employeeId);
+    //   const found = users.find((u) => String(u._id) === String(employeeId));
+    //   employeeName = found ? found.name : "";
+    // }
 
     let employeeId = formData.employee || "";
     let employeeName = formData.employeeName || "";
-    if (employeeId && !employeeName) {
+
+    // Auto-assign to department's risk_owner if no employee selected
+    if (!employeeId && formData.department) {
+      const deptId = formData.department;
+      const dept = departments?.find((d) => d.name === deptId)?.id;
+      console.log(dept);
+      const deptRiskOwner = users.find(
+        (u) => String(u.department) === String(dept) && u.role === "risk_owner"
+      );
+      console.log(deptRiskOwner);
+      if (deptRiskOwner) {
+        employeeId = deptRiskOwner.name; // assign ID
+        employeeName = deptRiskOwner.name; // assign name
+        console.log(
+          "Assigned to department risk owner:",
+          employeeName,
+          employeeId
+        );
+      }
+    } else if (employeeId && !employeeName) {
+      console.log(employeeId);
       const found = users.find((u) => String(u._id) === String(employeeId));
       employeeName = found ? found.name : "";
     }
 
-    const newTask = {
-      ...formData,
-      employee: employeeId,
-      employeeName,
-      riskId: riskFormData.riskId || formData.riskId,
-      taskId: newTaskId,
-      status: STATUS.PENDING,
-    };
-
-    // ✅ Add log here
-    console.log("🟦 NEW TASK TO BE SAVED:", newTask);
-    console.log("🟦 FormData before saving:", formData);
-    console.log("🟦 Employee options:", users);
-    console.log("🟦 Department selected:", formData.department);
-
-    try {
-      await taskService.saveTask(newTask);
-      const updatedTasks = await taskService.getAllTasks();
-      const filteredTasks = riskFormData.riskId
-        ? updatedTasks.filter((t) => t.riskId === riskFormData.riskId)
-        : updatedTasks;
-      setTasks(filteredTasks);
-    } catch (err) {
-      console.error("Failed to add task:", err);
-      alert("Failed to add task. See console for details.");
-      return;
+    if (editingTaskId) {
+      const updatedTask = {
+        ...formData,
+        employee: employeeId,
+        employeeName,
+        taskId: editingTaskId,
+      };
+      try {
+        await taskService.updateTask(editingTaskId, updatedTask);
+        setTasks((prev) =>
+          prev.map((t) => (t.taskId === editingTaskId ? updatedTask : t))
+        );
+      } catch (err) {
+        console.error(err);
+        alert("Failed to update task.");
+        return;
+      }
+    } else {
+      const newTaskId = `T-${
+        tasks.filter((t) => t.riskId === formData.riskId).length + 1
+      }`;
+      const newTask = {
+        ...formData,
+        employee: employeeId,
+        employeeName,
+        taskId: newTaskId,
+        status: STATUS.PENDING,
+      };
+      try {
+        await taskService.saveTask(newTask);
+        const allTasks = await taskService.getAllTasks();
+        setTasks(
+          riskFormData.riskId
+            ? allTasks.filter((t) => t.riskId === riskFormData.riskId)
+            : allTasks
+        );
+      } catch (err) {
+        console.error(err);
+        alert("Failed to add task.");
+        return;
+      }
     }
 
     setFormData({
@@ -246,23 +261,58 @@ export default function TaskManagement({ riskFormData = {} }) {
       startDate: today,
       endDate: "",
     });
+    setIsModalOpen(false);
+    setEditingTaskId(null);
   };
 
+  // --- Delete Task ---
+  const deleteTask = async (taskId) => {
+    if (!window.confirm("Are you sure you want to delete this task?")) return;
+    try {
+      await taskService.deleteTask(taskId);
+      setTasks((prev) => prev.filter((t) => t.taskId !== taskId));
+      if (activeTaskId === taskId) setActiveTaskId(null);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete task.");
+    }
+  };
+
+  // --- Mark Complete ---
   const markTaskComplete = async (taskId) => {
     const taskToUpdate = tasks.find((t) => t.taskId === taskId);
     if (!taskToUpdate) return;
-
     const updatedTask = {
       ...taskToUpdate,
       status: ["risk_manager", "risk_owner"].includes(user?.role)
         ? STATUS.APPROVED
         : STATUS.COMPLETED_PENDING,
     };
-
     await taskService.updateTask(taskId, updatedTask);
     setTasks((prev) =>
       prev.map((t) => (t.taskId === taskId ? updatedTask : t))
     );
+  };
+
+  // --- Edit Handler ---
+  const editTask = (task) => {
+    setFormData({
+      riskId: task.riskId,
+      department: task.department,
+      employee: task.employee,
+      employeeName: task.employeeName,
+      description: task.description,
+      startDate: task.startDate,
+      endDate: task.endDate,
+    });
+    setEditingTaskId(task.taskId);
+    setIsModalOpen(true);
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    const [year, month, day] = dateStr.split("T")[0].split("-");
+    return `${day}-${month}-${year}`;
   };
 
   const buttonStyle = {
@@ -275,56 +325,8 @@ export default function TaskManagement({ riskFormData = {} }) {
     cursor: "pointer",
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "";
-    const [year, month, day] = dateStr.split("T")[0].split("-");
-    return `${day}-${month}-${year}`;
-  };
-
-  // NEW: Fixed "Back to Dashboard" button styles
-  const backBtnStyle = {
-    position: "fixed",
-    top: "40px",
-    right: "120px",
-    padding: "10px 20px",
-    borderRadius: "6px",
-    backgroundColor: "#005FCC",
-    border: "none",
-    color: "white",
-    fontSize: "1rem",
-    fontWeight: "600",
-    cursor: "pointer",
-    boxShadow: "0 4px 8px rgba(0, 95, 204, 0.3)",
-    transition: "all 0.3s ease",
-    display: "inline-flex",
-    alignItems: "center",
-    zIndex: 99,
-  };
-
-  const handleBackBtnMouseEnter = (e) => {
-    e.target.style.backgroundColor = "#0046a3";
-    e.target.style.boxShadow = "0 6px 12px rgba(0, 70, 163, 0.5)";
-    e.target.style.transform = "translateY(-2px)";
-  };
-
-  const handleBackBtnMouseLeave = (e) => {
-    e.target.style.backgroundColor = "#005FCC";
-    e.target.style.boxShadow = "0 4px 8px rgba(0, 95, 204, 0.3)";
-    e.target.style.transform = "translateY(0)";
-  };
-
   return (
     <div style={{ padding: "30px", maxWidth: "1000px", margin: "auto" }}>
-      {/* NEW: Back to Dashboard Button */}
-      {/* <button
-        style={backBtnStyle}
-        onClick={() => history.push("/risk-assessment")}
-        onMouseEnter={handleBackBtnMouseEnter}
-        onMouseLeave={handleBackBtnMouseLeave}
-      >
-        ← Back to Dashboard
-      </button> 1*/}
-
       <h2 style={{ textAlign: "center" }}>Action Plan</h2>
       <p
         style={{
@@ -337,187 +339,268 @@ export default function TaskManagement({ riskFormData = {} }) {
         Tasks to treat identified Risks.
       </p>
 
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr",
+          gap: "12px",
+        }}
+      >
+        {tasks
+          .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+          .map((task) => {
+            const isActive = activeTaskId === task.taskId;
+            return (
+              <div
+                key={task.taskId}
+                style={{
+                  border: "1px solid #ccc",
+                  borderRadius: "8px",
+                  padding: "12px",
+                  cursor: "pointer",
+                  background: isActive ? "#f0f8ff" : "#fff",
+                  boxShadow: isActive
+                    ? "0 4px 10px rgba(0,0,0,0.15)"
+                    : "0 1px 3px rgba(0,0,0,0.1)",
+                  transition: "all 0.3s",
+                }}
+                onClick={() => setActiveTaskId(isActive ? null : task.taskId)}
+              >
+                <h4 style={{ margin: 0, fontWeight: "bold" }}>
+                  {task.description}
+                </h4>
+                {isActive && (
+                  <div
+                    style={{
+                      marginTop: "10px",
+                      fontSize: "14px",
+                      lineHeight: "1.4",
+                    }}
+                  >
+                    <p>
+                      <strong>Assignee:</strong> {task.employee || "—"}
+                    </p>
+                    <p>
+                      <strong>Start:</strong> {formatDate(task.startDate)}
+                    </p>
+                    <p>
+                      <strong>End:</strong> {formatDate(task.endDate)}
+                    </p>
+                    <p>
+                      <strong>Status:</strong> {task.status}
+                    </p>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "8px",
+                        flexWrap: "wrap",
+                        marginTop: "6px",
+                      }}
+                    >
+                      {task.status === STATUS.PENDING &&
+                        String(task.employee) === String(user?.id) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markTaskComplete(task.taskId);
+                            }}
+                            style={{ ...buttonStyle, background: "#2ecc71" }}
+                          >
+                            ✅ Mark Complete
+                          </button>
+                        )}
+                      {task.status === STATUS.COMPLETED_PENDING &&
+                        ["risk_manager", "risk_owner"].includes(user?.role) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markTaskComplete(task.taskId);
+                            }}
+                            style={{ ...buttonStyle, background: "#f39c12" }}
+                          >
+                            ✅ Approve
+                          </button>
+                        )}
+                      {task.status === STATUS.APPROVED && (
+                        <span>✅ Approved</span>
+                      )}
+
+                      {["risk_owner", "risk_manager"].includes(user?.role) && (
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              editTask(task);
+                            }}
+                            style={{ ...buttonStyle, background: "#3498db" }}
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteTask(task.taskId);
+                            }}
+                            style={{ ...buttonStyle, background: "#e74c3c" }}
+                          >
+                            🗑️ Delete
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+      </div>
+
       {user && ["risk_owner", "risk_manager"].includes(user.role) && (
-        <div style={{ display: "grid", gap: "20px", marginBottom: "30px" }}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "20px",
-              marginBottom: "20px",
-            }}
-          >
-            {location.pathname === "/risk-assessment/tasks" && (
-              <SelectField
-                label="Related Risk"
-                name="riskId"
-                value={formData.riskId}
-                onChange={handleInputChange}
-                options={riskOptions}
-                placeholder="Select related risk"
-              />
-            )}
-
-            <SelectField
-              label="Department"
-              name="department"
-              value={formData.department}
-              onChange={handleDeptChange}
-              options={departments.map((d) => ({
-                value: d._id,
-                label: d.name,
-              }))}
-              placeholder="Select department"
-            />
-
-            <SelectField
-              label="Assign To"
-              name="employee"
-              value={formData.employee}
-              onChange={handleInputChange}
-              options={empOptions}
-              placeholder="Select employee"
-            />
-
-            <TextAreaField
-              label="Task Description"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              placeholder="Describe the mitigation task..."
-              rows={1}
-            />
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "20px",
-              marginBottom: "20px",
-            }}
-          >
-            <InputField
-              label="Start Date"
-              type="date"
-              name="startDate"
-              value={formData.startDate}
-              onChange={handleInputChange}
-              min={today}
-            />
-            <InputField
-              label="End Date"
-              type="date"
-              name="endDate"
-              value={formData.endDate}
-              onChange={handleInputChange}
-              min={formData.startDate || today}
-              max={riskFormData.deadlineDate || undefined}
-            />
-          </div>
-
+        <div style={{ marginTop: "20px" }}>
           <button
-            onClick={addTask}
             style={{
               background: "#3498db",
               color: "#fff",
               border: "none",
-              padding: "12px",
+              padding: "12px 20px",
               borderRadius: "8px",
               cursor: "pointer",
             }}
+            onClick={() => setIsModalOpen(true)}
           >
             ➕ Add Task
           </button>
         </div>
       )}
 
-      <div>
-        <h3>📋 Assigned Tasks</h3>
-        <table
+      {isModalOpen && (
+        <div
           style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
             width: "100%",
-            borderCollapse: "collapse",
-            marginTop: "15px",
+            height: "100%",
+            backgroundColor: "rgba(0,0,0,0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 999,
+            padding: "20px",
+            boxSizing: "border-box",
           }}
         >
-          <thead>
-            <tr style={{ background: "#f4f6f8" }}>
-              <th style={{ padding: "10px", border: "1px solid #ddd" }}>
-                Description
-              </th>
-              <th style={{ padding: "10px", border: "1px solid #ddd" }}>
-                Assignee
-              </th>
-              <th style={{ padding: "10px", border: "1px solid #ddd" }}>
-                Start Date
-              </th>
-              <th style={{ padding: "10px", border: "1px solid #ddd" }}>
-                End Date
-              </th>
-              <th style={{ padding: "10px", border: "1px solid #ddd" }}>
-                Status
-              </th>
-              <th style={{ padding: "10px", border: "1px solid #ddd" }}>
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {tasks
-              .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
-              .map((task) => (
-                <tr key={task.taskId}>
-                  <td style={{ padding: "8px", border: "1px solid #ddd" }}>
-                    {task.description}
-                  </td>
-                  <td style={{ padding: "8px", border: "1px solid #ddd" }}>
-                    {task.employeeName ||
-                      users.find((u) => String(u.name) === String(task.employee))
-                        ?.name ||
-                      "—"}
-                  </td>
-                  <td style={{ padding: "8px", border: "1px solid #ddd" }}>
-                    {formatDate(task.startDate)}
-                  </td>
-                  <td style={{ padding: "8px", border: "1px solid #ddd" }}>
-                    {formatDate(task.endDate)}
-                  </td>
-                  <td style={{ padding: "8px", border: "1px solid #ddd" }}>
-                    {task.status}
-                  </td>
-                  <td style={{ padding: "8px", border: "1px solid #ddd" }}>
-                    {task.status === STATUS.PENDING &&
-                      String(task.employee) === String(user?.id) && (
-                        <button
-                          onClick={() => markTaskComplete(task.taskId)}
-                          style={{ ...buttonStyle, background: "#2ecc71" }}
-                        >
-                          ✅
-                        </button>
-                      )}
-
-                    {task.status === STATUS.COMPLETED_PENDING &&
-                      (["risk_manager", "risk_owner"].includes(user?.role) ? (
-                        <button
-                          onClick={() => markTaskComplete(task.taskId)}
-                          style={{ ...buttonStyle, background: "#f39c12" }}
-                        >
-                          ✅ Approved
-                        </button>
-                      ) : (
-                        <span>✅ Waiting for approval</span>
-                      ))}
-
-                    {task.status === STATUS.APPROVED && (
-                      <span>✅ Approved</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div>
+          <div
+            style={{
+              background: "#fff",
+              padding: "25px",
+              borderRadius: "10px",
+              width: "100%",
+              maxWidth: "450px",
+              boxSizing: "border-box",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              boxShadow: "0 5px 15px rgba(0,0,0,0.3)",
+            }}
+          >
+            <h3 style={{ marginBottom: "15px" }}>
+              {editingTaskId ? "Edit Task" : "Add Task"}
+            </h3>
+            <div style={{ display: "grid", gap: "12px" }}>
+              {location.pathname === "/risk-assessment/tasks" && (
+                <SelectField
+                  label="Related Risk"
+                  name="riskId"
+                  value={formData.riskId}
+                  onChange={handleInputChange}
+                  options={riskOptions}
+                  placeholder="Select related risk"
+                />
+              )}
+              <SelectField
+                label="Department"
+                name="department"
+                value={formData.department}
+                onChange={handleDeptChange}
+                options={departments.map((d) => ({
+                  value: d._id,
+                  label: d.name,
+                }))}
+                placeholder="Select department"
+              />
+              <SelectField
+                label="Assign To"
+                name="employee"
+                value={formData.employee}
+                onChange={handleInputChange}
+                options={empOptions}
+                placeholder="Select employee"
+              />
+              <TextAreaField
+                label="Task Description / Person"
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                placeholder="Describe the mitigation task..."
+                rows={2}
+              />
+              <InputField
+                label="Start Date"
+                type="date"
+                name="startDate"
+                value={formData.startDate}
+                onChange={handleInputChange}
+                min={today}
+              />
+              <InputField
+                label="End Date"
+                type="date"
+                name="endDate"
+                value={formData.endDate}
+                onChange={handleInputChange}
+                min={formData.startDate || today}
+                max={riskFormData.deadlineDate || undefined}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  gap: "10px",
+                  justifyContent: "flex-end",
+                  marginTop: "10px",
+                }}
+              >
+                <button
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: "5px",
+                    cursor: "pointer",
+                    background: "#ccc",
+                  }}
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setEditingTaskId(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  style={{
+                    padding: "8px 16px",
+                    borderRadius: "5px",
+                    cursor: "pointer",
+                    background: "#3498db",
+                    color: "#fff",
+                  }}
+                  onClick={saveTask}
+                >
+                  {editingTaskId ? "Update Task" : "Save Task"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

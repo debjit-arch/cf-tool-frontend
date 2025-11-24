@@ -181,6 +181,7 @@ const TreatmentPlanForm = ({ formData, handleInputChange }) => {
               name="status"
               options={[
                 { value: "Active", label: "Active" },
+                { value: "WIP", label: "WIP" },
                 { value: "Closed", label: "Closed" },
               ]}
               value={{ value: statusValue, label: statusValue }}

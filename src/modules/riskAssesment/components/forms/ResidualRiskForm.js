@@ -186,7 +186,7 @@ const ResidualRiskForm = ({ formData = {}, handleInputChange }) => {
             type="date"
           />
           <InputField
-            label="Target Date (Days)"
+            label="Number of Days"
             name="numberOfDays"
             value={formData.numberOfDays || ""}
             onChange={handleInputChange}
