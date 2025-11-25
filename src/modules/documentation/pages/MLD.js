@@ -140,16 +140,6 @@ const MLD = () => {
           departmentName: user?.department?.name ?? "N/A",
         });
 
-        try {
-          const docId = uploadedDoc?.id ?? uploadedDoc?._id ?? null;
-          if (docId) {
-            await gapService.createGap(docId, { status: "Open" });
-            console.log("Gap entry created for docId:", docId);
-          }
-        } catch (gapErr) {
-          console.error("Failed to create gap entry:", gapErr);
-        }
-
         setModal({
           isOpen: true,
           title: "Success",
@@ -226,7 +216,7 @@ const MLD = () => {
           setModal({
             isOpen: true,
             title: "Success",
-            message: "Documents Uploaded",
+            message: "Documents Deleted",
             showCancel: false,
             onConfirm: () => setModal((m) => ({ ...m, isOpen: false })),
           });
@@ -235,7 +225,7 @@ const MLD = () => {
           setModal({
             isOpen: true,
             title: "Failure",
-            message: "Documents Upload Failed",
+            message: "Documents Delete Failed",
             showCancel: false,
             onConfirm: () => setModal((m) => ({ ...m, isOpen: false })),
           });
@@ -788,6 +778,7 @@ const MLD = () => {
                       </td>
 
                       {/* Actions */}
+                      {/* Actions */}
                       <td
                         style={{
                           padding: "12px 14px",
@@ -817,26 +808,29 @@ const MLD = () => {
                                 <Check size={20} />
                               </div>
                             ) : (
-                              <button
-                                onClick={handleApprove}
-                                style={{
-                                  backgroundColor: "#2ecc71",
-                                  color: "white",
-                                  border: "none",
-                                  borderRadius: "6px",
-                                  padding: "4px 6px",
-                                  cursor: "pointer",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                }}
-                              >
-                                <Calendar
-                                  size={16}
-                                  style={{ marginRight: "4px" }}
-                                />
-                                Approve
-                              </button>
+                              // Only show Approve button if user is Risk Owner
+                              user?.role === "Risk Owner" && (
+                                <button
+                                  onClick={handleApprove}
+                                  style={{
+                                    backgroundColor: "#2ecc71",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "6px",
+                                    padding: "4px 6px",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                  }}
+                                >
+                                  <Calendar
+                                    size={16}
+                                    style={{ marginRight: "4px" }}
+                                  />
+                                  Approve
+                                </button>
+                              )
                             )}
 
                             <button
