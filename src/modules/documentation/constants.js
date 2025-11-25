@@ -120,7 +120,7 @@ export const DOCUMENT_MAPPING = {
   },
   5.31: {
     type: "",
-    dept: "",
+    dept: ["Admin & Facilities"],
     docs: ["ISMS_POL_Compliance_Policy", "SOP_Finance"],
   },
   5.32: {

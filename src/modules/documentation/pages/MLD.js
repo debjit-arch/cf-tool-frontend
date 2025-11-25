@@ -3,10 +3,21 @@ import { useHistory } from "react-router-dom";
 import documentationService from "../services/documentationService";
 import gapService from "../../gapAssessment/services/gapService";
 import { Trash2, UploadCloud, Calendar, Check } from "lucide-react";
+import { DOCUMENT_MAPPING } from "../constants";
+import Modal from "../../../components/navigations/Modal";
 
 const MLD = () => {
   const history = useHistory();
   const user = JSON.parse(sessionStorage.getItem("user"));
+
+  // Global modal state
+  const [modal, setModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    showCancel: false,
+  });
 
   // original states
   const [documents, setDocuments] = useState([]);
@@ -71,7 +82,13 @@ const MLD = () => {
       setPreviewUrl(fullUrl);
       setPreviewModalOpen(true);
     } else {
-      alert("No document uploaded to preview.");
+      setModal({
+        isOpen: true,
+        title: "No Document Found",
+        message: "No Document to preview",
+        showCancel: false,
+        onConfirm: () => setModal((m) => ({ ...m, isOpen: false })),
+      });
     }
   };
 
@@ -133,7 +150,13 @@ const MLD = () => {
           console.error("Failed to create gap entry:", gapErr);
         }
 
-        alert("Document uploaded successfully");
+        setModal({
+          isOpen: true,
+          title: "Success",
+          message: "Document uploaded successfully!",
+          showCancel: false,
+          onConfirm: () => setModal((m) => ({ ...m, isOpen: false })),
+        });
 
         // refresh documents and counts
         const docs = (await documentationService.getDocuments()) || [];
@@ -147,7 +170,13 @@ const MLD = () => {
         setUploadedCounts(counts);
       } catch (err) {
         console.error("Upload failed:", err);
-        alert("Error uploading document");
+        setModal({
+          isOpen: true,
+          title: "Failure",
+          message: "Upload Failed please try again in some time.",
+          showCancel: false,
+          onConfirm: () => setModal((m) => ({ ...m, isOpen: false })),
+        });
       } finally {
         setUploading((prev) => ({ ...prev, [soaId]: false }));
       }
@@ -156,46 +185,63 @@ const MLD = () => {
   };
 
   const handleDeleteForSoA = async (soaId) => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete the uploaded document(s) for this SoA?"
-      )
-    )
-      return;
+    setModal({
+      isOpen: true,
+      title: "Confirm Delete",
+      message:
+        "Are you sure you want to delete the uploaded document(s) for this SoA?",
+      showCancel: true,
+      onConfirm: async () => {
+        setModal((m) => ({ ...m, isOpen: false }));
+        try {
+          const linkedDocs = documents.filter(
+            (doc) => String(doc.soaId) === String(soaId)
+          );
 
-    try {
-      const linkedDocs = documents.filter(
-        (doc) => String(doc.soaId) === String(soaId)
-      );
+          for (const doc of linkedDocs) {
+            await documentationService.deleteDocument(doc.id);
+          }
 
-      for (const doc of linkedDocs) {
-        await documentationService.deleteDocument(doc.id);
-      }
+          const updatedDocs = documents.filter(
+            (doc) => !linkedDocs.includes(doc)
+          );
+          setDocuments(updatedDocs);
 
-      const updatedDocs = documents.filter((doc) => !linkedDocs.includes(doc));
-      setDocuments(updatedDocs);
+          // Recompute uploaded counts
+          const counts = {};
+          (soas || []).forEach((s) => (counts[s.id] = 0));
+          (updatedDocs || []).forEach((d) => {
+            const sid = d.soaId ?? d.soa?.id ?? d.soaIdString ?? null;
+            if (sid != null) counts[sid] = (counts[sid] ?? 0) + 1;
+          });
+          setUploadedCounts(counts);
 
-      // Recompute uploaded counts
-      const counts = {};
-      (soas || []).forEach((s) => (counts[s.id] = 0));
-      (updatedDocs || []).forEach((d) => {
-        const sid = d.soaId ?? d.soa?.id ?? d.soaIdString ?? null;
-        if (sid != null) counts[sid] = (counts[sid] ?? 0) + 1;
-      });
-      setUploadedCounts(counts);
+          // Clear selected files for this SoA
+          setSelectedFiles((prev) => {
+            const copy = { ...prev };
+            delete copy[soaId];
+            return copy;
+          });
 
-      // Clear selected files for this SoA
-      setSelectedFiles((prev) => {
-        const copy = { ...prev };
-        delete copy[soaId];
-        return copy;
-      });
-
-      alert("Uploaded document(s) deleted. You can now upload new ones.");
-    } catch (error) {
-      console.error("Delete failed:", error);
-      alert("Error deleting documents");
-    }
+          setModal({
+            isOpen: true,
+            title: "Success",
+            message: "Documents Uploaded",
+            showCancel: false,
+            onConfirm: () => setModal((m) => ({ ...m, isOpen: false })),
+          });
+        } catch (error) {
+          console.error("Delete failed:", error);
+          setModal({
+            isOpen: true,
+            title: "Failure",
+            message: "Documents Upload Failed",
+            showCancel: false,
+            onConfirm: () => setModal((m) => ({ ...m, isOpen: false })),
+          });
+        } // call your delete function
+      },
+    });
   };
 
   const getUploadedCount = (soaId) => uploadedCounts[soaId] ?? 0;
@@ -246,8 +292,31 @@ const MLD = () => {
     });
   }, [filteredAndSortedSoas]);
 
+  const departmentFilteredSoAs = useMemo(() => {
+    if (!user?.department?.name) return uniqueSoas;
+
+    return uniqueSoas.filter((soa) => {
+      const docRefs = Array.isArray(soa.documentRef)
+        ? soa.documentRef
+        : [soa.documentRef];
+
+      // Check if any docRef exists in DOCUMENT_MAPPING
+      return docRefs.some((ref) => {
+        for (const key in DOCUMENT_MAPPING) {
+          if (DOCUMENT_MAPPING[key].docs?.includes(ref)) {
+            const deptList = Array.isArray(DOCUMENT_MAPPING[key].dept)
+              ? DOCUMENT_MAPPING[key].dept
+              : [DOCUMENT_MAPPING[key].dept];
+            if (deptList.includes(user.department.name)) return true;
+          }
+        }
+        return false;
+      });
+    });
+  }, [uniqueSoas, user]);
+
   // Pagination
-  const currentSoAs = uniqueSoas;
+  const currentSoAs = departmentFilteredSoAs;
 
   const totalPagesSoA = Math.max(
     1,
@@ -528,6 +597,24 @@ const MLD = () => {
                     (d) => String(d.soaId) === String(soa.id)
                   );
 
+                  // --- Get department from DOCUMENT_MAPPING ---
+                  const firstRef = Array.isArray(soa.documentRef)
+                    ? soa.documentRef[0]
+                    : soa.documentRef;
+
+                  let departmentFromMapping = "—";
+
+                  for (const key in DOCUMENT_MAPPING) {
+                    if (DOCUMENT_MAPPING[key].docs?.includes(firstRef)) {
+                      departmentFromMapping = Array.isArray(
+                        DOCUMENT_MAPPING[key].dept
+                      )
+                        ? DOCUMENT_MAPPING[key].dept.join(", ")
+                        : DOCUMENT_MAPPING[key].dept;
+                      break;
+                    }
+                  }
+
                   const approvalDate = doc?.approvalDate
                     ? new Date(doc.approvalDate).toISOString().split("T")[0]
                     : "—";
@@ -550,10 +637,24 @@ const MLD = () => {
                       setDocuments((prevDocs) =>
                         prevDocs.map((d) => (d.id === doc.id ? updatedDoc : d))
                       );
-                      alert("Document approved!");
+                      setModal({
+                        isOpen: true,
+                        title: "Success",
+                        message: "Documents Approved",
+                        showCancel: false,
+                        onConfirm: () =>
+                          setModal((m) => ({ ...m, isOpen: false })),
+                      });
                     } catch (err) {
                       console.error(err);
-                      alert("Failed to approve document");
+                      setModal({
+                        isOpen: true,
+                        title: "Failed",
+                        message: "Documents Approve Failed",
+                        showCancel: false,
+                        onConfirm: () =>
+                          setModal((m) => ({ ...m, isOpen: false })),
+                      });
                     }
                   };
 
@@ -574,6 +675,8 @@ const MLD = () => {
                       >
                         {idx + 1}
                       </td>
+
+                      {/* Document Name */}
                       <td
                         style={{
                           padding: "12px 14px",
@@ -588,6 +691,8 @@ const MLD = () => {
                           ? soa.documentRef.join(", ")
                           : soa.documentRef}
                       </td>
+
+                      {/* Department from mapping */}
                       <td
                         style={{
                           padding: "12px 14px",
@@ -596,8 +701,10 @@ const MLD = () => {
                           textAlign: "center",
                         }}
                       >
-                        {doc?.departmentName ?? "—"}
+                        {departmentFromMapping}
                       </td>
+
+                      {/* Uploader Name */}
                       <td
                         style={{
                           padding: "12px 14px",
@@ -608,6 +715,8 @@ const MLD = () => {
                       >
                         {doc?.uploaderName ?? "—"}
                       </td>
+
+                      {/* Approval Date */}
                       <td
                         style={{
                           padding: "12px 14px",
@@ -618,6 +727,8 @@ const MLD = () => {
                       >
                         {approvalDate}
                       </td>
+
+                      {/* Next Approval Date */}
                       <td
                         style={{
                           padding: "12px 14px",
@@ -628,6 +739,8 @@ const MLD = () => {
                       >
                         {nextApprovalDate}
                       </td>
+
+                      {/* Upload File */}
                       <td
                         style={{
                           padding: "12px 14px",
@@ -673,6 +786,8 @@ const MLD = () => {
                           )}
                         </button>
                       </td>
+
+                      {/* Actions */}
                       <td
                         style={{
                           padding: "12px 14px",
@@ -686,7 +801,6 @@ const MLD = () => {
                         {hasUploaded && (
                           <>
                             {doc?.approvalDate ? (
-                              // Show tick icon if approved
                               <div
                                 style={{
                                   backgroundColor: "#2ecc71",
@@ -703,7 +817,6 @@ const MLD = () => {
                                 <Check size={20} />
                               </div>
                             ) : (
-                              // Show Approve button if not approved
                               <button
                                 onClick={handleApprove}
                                 style={{
@@ -812,6 +925,14 @@ const MLD = () => {
           </div>
         </div>
       )}
+      <Modal
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
+        onClose={() => setModal((m) => ({ ...m, isOpen: false }))}
+        onConfirm={modal.onConfirm}
+        showCancel={modal.showCancel}
+      />
     </div>
   );
 };

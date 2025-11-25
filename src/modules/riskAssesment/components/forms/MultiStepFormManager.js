@@ -6,6 +6,8 @@ import ResidualRiskForm from "./ResidualRiskForm";
 import riskService from "../../services/riskService";
 import TaskManagement from "../../pages/TaskManagement";
 
+import Modal from "../../../../components/navigations/Modal";
+
 const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
   const history = useHistory();
   const location = useLocation();
@@ -13,15 +15,32 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
   const existingRiskId = location.state?.editRiskId;
   const isEditing = !!existingRiskId;
 
+  const [modal, setModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+  });
+
+  const showModal = (title, message) => {
+    setModal({ isOpen: true, title, message });
+  };
+
+  const closeModal = () => {
+    setModal({ ...modal, isOpen: false });
+  };
+
   const [departments, setDepartments] = useState([]);
 
   useEffect(() => {
     async function loadDepartments() {
       try {
         const token = sessionStorage.getItem("token");
-        const res = await fetch("https://safesphere.duckdns.org/user-service/api/departments", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch(
+          "https://safesphere.duckdns.org/user-service/api/departments",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         const data = await res.json();
         setDepartments(data);
       } catch (err) {
@@ -102,7 +121,6 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
           .filter((id) => id !== existingRiskId)
           .includes(formData.riskId)
       : existingRiskIds.includes(formData.riskId);
-
     return (
       formData.riskId &&
       formData.department &&
@@ -134,7 +152,7 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
 
   const handleNext = () => {
     if (user.role === "risk_identifier" && currentStep >= 1) {
-      alert("⛔ Access Restricted You can save and exit.");
+      showModal("⛔ Access Restricted", "You can save and exit only.");
       return;
     }
     if (currentStep < 3) setCurrentStep(currentStep + 1);
@@ -147,27 +165,31 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
   const handleSave = async () => {
     try {
       const savedRisk = await riskService.saveRisk(formData);
-      alert(isEditing ? "💾 Changes Saved!" : "💾 Draft Saved!");
+      showModal(
+        isEditing ? "Eureka Assessment Complete!" : "Edits Saved!",
+        "Click Next for Risk Treatment."
+      );
       if (onSubmit) onSubmit(savedRisk);
     } catch (error) {
       console.error("Error saving draft:", error);
-      alert("❌ Error saving draft. Please try again.");
+      showModal("❌ Error", "Error saving draft. Please try again.");
     }
   };
 
   const handleSubmit = async () => {
     try {
       const savedRisk = await riskService.saveRisk(formData);
-      alert(
+      showModal(
         isEditing
           ? "🎉 Risk Assessment Updated Successfully!"
-          : "🎉 Risk Assessment Created Successfully!"
+          : "🎉 Risk Assessment Created Successfully!",
+        "You will be redirected shortly."
       );
       if (onSubmit) onSubmit(savedRisk);
       setTimeout(() => history.push("/risk-assessment/saved"), 1000);
     } catch (error) {
       console.error("Error saving risk:", error);
-      alert("❌ Error saving risk assessment. Please try again.");
+      showModal("❌ Error", "Error saving risk assessment. Please try again.");
     }
   };
 
@@ -203,7 +225,7 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
                 handleInputChange={handleInputChange}
               />
               <h4 style={{ marginBottom: "10px", color: "#2c3e50" }}>
-                ⚖️ Residual Risk
+              
               </h4>
               <ResidualRiskForm
                 formData={formData}
@@ -231,11 +253,7 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
   };
 
   const getStepLabel = (step) => {
-    const labels = [
-      "Risk Assessment",
-      "Treatment Planning",
-      "Task Management",
-    ];
+    const labels = ["Risk Assessment", "Treatment Planning", "Task Management"];
     return labels[step - 1];
   };
 
@@ -370,19 +388,34 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
 
         <button
           onClick={handleSave}
+          disabled={
+            (currentStep === 1 && !isStep1Valid()) ||
+            (currentStep === 2 && !isStep2Valid()) ||
+            (currentStep === 3 && !isStep3Valid())
+          }
           style={{
             padding: "10px 20px",
-            background: "linear-gradient(45deg,#6c5ce7,#0984e3)",
+            background:
+              (currentStep === 1 && !isStep1Valid()) ||
+              (currentStep === 2 && !isStep2Valid()) ||
+              (currentStep === 3 && !isStep3Valid())
+                ? "#bdc3c7"
+                : "linear-gradient(45deg,#6c5ce7,#0984e3)",
             color: "white",
             border: "none",
             borderRadius: "30px",
             fontSize: "14px",
             fontWeight: "600",
-            cursor: "pointer",
+            cursor:
+              (currentStep === 1 && !isStep1Valid()) ||
+              (currentStep === 2 && !isStep2Valid()) ||
+              (currentStep === 3 && !isStep3Valid())
+                ? "not-allowed"
+                : "pointer",
             minWidth: "110px",
           }}
         >
-          💾 Save
+          Save
         </button>
 
         {currentStep < 3 && (
@@ -426,6 +459,12 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
           </button>
         )}
       </div>
+      <Modal
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
+        onClose={closeModal}
+      />
     </div>
   );
 };

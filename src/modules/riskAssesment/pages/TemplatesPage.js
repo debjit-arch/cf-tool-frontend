@@ -17,6 +17,21 @@ const RiskTemplateTable = () => {
   const risksPerPage = 5;
   const history = useHistory();
 
+  const [infoModal, setInfoModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null, // optional callback for confirm actions
+  });
+
+  const showInfoModal = (title, message, onConfirm = null) => {
+    setInfoModal({ isOpen: true, title, message, onConfirm });
+  };
+
+  const closeInfoModal = () => {
+    setInfoModal({ ...infoModal, isOpen: false });
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -129,12 +144,16 @@ const RiskTemplateTable = () => {
 
       await riskService.saveRisk(newRisk);
 
-      alert(
+      showInfoModal(
+        "Success",
         `Risk template ${originalIndex + 1} accepted and added successfully!`
       );
     } catch (error) {
       console.error(error);
-      alert(`Failed to accept risk template: ${error?.message || error}`);
+      showInfoModal(
+        "Error",
+        `Failed to accept risk template: ${error?.message || error}`
+      );
     } finally {
       setSavingId(null);
     }
@@ -156,7 +175,11 @@ const RiskTemplateTable = () => {
       setRisks((prev) => prev.filter((_, idx) => idx !== riskToRemove));
       setRemovingId(null);
       setShowConfirmDialog(false);
-      alert(`Risk template ${riskToRemove + 1} has been removed from view.`);
+      showInfoModal(
+        "Removed",
+        `Risk template ${riskToRemove + 1} has been removed from view.`
+      );
+
       setRiskToRemove(null);
 
       // ensure page remains valid after deletion
@@ -735,6 +758,56 @@ const RiskTemplateTable = () => {
                 Accept
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {infoModal.isOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1400,
+            padding: 20,
+          }}
+          onClick={closeInfoModal}
+        >
+          <div
+            style={{
+              maxWidth: 480,
+              width: "100%",
+              background: "white",
+              borderRadius: 8,
+              padding: 24,
+              boxShadow: "0 8px 40px rgba(0,0,0,0.18)",
+              textAlign: "center",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ marginTop: 0 }}>{infoModal.title}</h3>
+            <p style={{ color: "#555", marginBottom: 24 }}>
+              {infoModal.message}
+            </p>
+            <button
+              onClick={() => {
+                if (infoModal.onConfirm) infoModal.onConfirm();
+                closeInfoModal();
+              }}
+              style={{
+                padding: "10px 20px",
+                borderRadius: 6,
+                border: "none",
+                backgroundColor: "#007bff",
+                color: "white",
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              OK
+            </button>
           </div>
         </div>
       )}
