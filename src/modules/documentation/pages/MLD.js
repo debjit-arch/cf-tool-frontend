@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useHistory } from "react-router-dom";
 import documentationService from "../services/documentationService";
-import gapService from "../../gapAssessment/services/gapService";
 import { Trash2, UploadCloud, Calendar, Check } from "lucide-react";
 import { DOCUMENT_MAPPING } from "../constants";
 import Modal from "../../../components/navigations/Modal";
+
+import Joyride, { STATUS } from "react-joyride";
 
 const MLD = () => {
   const history = useHistory();
@@ -18,6 +19,65 @@ const MLD = () => {
     onConfirm: null,
     showCancel: false,
   });
+
+  const [showButtons, setShowButtons] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > lastScrollY) {
+        // Scrolling down
+        setShowButtons(false);
+      } else {
+        // Scrolling up
+        setShowButtons(true);
+      }
+      setLastScrollY(window.scrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [lastScrollY]);
+
+  const [joyrideRun, setJoyrideRun] = useState(false);
+  const joyrideSteps = [
+    {
+      target: "#mld-header",
+      content:
+        "This is your Master List of Documents. You can upload and manage documents per SoA here.",
+    },
+    {
+      target: "#mld-search",
+      content:
+        "Use this search box to filter SoA entries by document reference.",
+    },
+    {
+      target: "#mld-sort",
+      content: "Sort your SoA entries by date or name using this dropdown.",
+    },
+    {
+      target: "#mld-upload-table",
+      content:
+        "This table shows all SoA entries with their uploaded documents. You can preview, upload, approve, or delete documents here.",
+    },
+    {
+      target: "#mld-upload-btn",
+      content:
+        "Click this button to upload a document for a specific SoA entry.",
+    },
+    {
+      target: "#mld-approve-btn",
+      content:
+        "If you are a Risk Owner, you can approve documents using this button.",
+    },
+    {
+      target: "#mld-delete-btn",
+      content: "Delete a document for a SoA entry using this button.",
+    },
+  ];
 
   // original states
   const [documents, setDocuments] = useState([]);
@@ -340,22 +400,74 @@ const MLD = () => {
     <div
       style={{ padding: "10px", maxWidth: "1200px", margin: "5px auto 20px" }}
     >
+      {/* Joyride */}
+      <Joyride
+        steps={joyrideSteps}
+        run={joyrideRun}
+        continuous
+        scrollToFirstStep
+        showSkipButton
+        styles={{ options: { zIndex: 10000 } }}
+        callback={(data) => {
+          const { status } = data;
+          if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+            setJoyrideRun(false);
+          }
+        }}
+      />
+
+      {/* Start Tour Button */}
       <button
-        style={backBtnStyle}
-        onClick={() => history.push("/documentation")}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = "#0046a3";
-          e.currentTarget.style.transform = "translateY(-2px)";
+        style={{
+          position: "sticky",
+          top: "0",
+          margin: "10px",
+          padding: "10px 24px",
+          borderRadius: "8px",
+          background: "linear-gradient(90deg, #ffb74d 0%, #ff9800 100%)",
+          border: "none",
+          color: "#fff",
+          fontWeight: "600",
+          fontSize: "14px",
+          cursor: "pointer",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+          transition: "transform 0.3s ease, opacity 0.3s ease",
+          zIndex: 999,
+          transform: showButtons ? "translateY(0)" : "translateY(-100%)",
+          opacity: showButtons ? 1 : 0,
         }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = "#005FCC";
-          e.currentTarget.style.transform = "translateY(0)";
-        }}
+        onClick={() => setJoyrideRun(true)}
       >
-        ← Back to Dashboard
+        Start Tour{" "}
+      </button>
+
+      {/* Back to Dashboard Button */}
+      <button
+        style={{
+          position: "sticky",
+          top: "0",
+          margin: "10px",
+          padding: "10px 24px",
+          borderRadius: "8px",
+          background: "#005FCC",
+          border: "none",
+          color: "#fff",
+          fontWeight: "500",
+          fontSize: "14px",
+          cursor: "pointer",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          transition: "transform 0.3s ease, opacity 0.3s ease",
+          zIndex: 999,
+          transform: showButtons ? "translateY(0)" : "translateY(-100%)",
+          opacity: showButtons ? 1 : 0,
+        }}
+        onClick={() => history.push("/documentation")}
+      >
+        ← Back to Dashboard{" "}
       </button>
 
       <div
+        id="mld-header"
         style={{
           background: "linear-gradient(135deg,#667eea 0%,#764ba2 100%)",
           borderRadius: "12px",
@@ -416,6 +528,7 @@ const MLD = () => {
               setSoaSearch(e.target.value);
               setCurrentPageSoA(1);
             }}
+            id="mld-search"
             style={{
               padding: "8px 12px",
               borderRadius: "8px",
@@ -426,6 +539,7 @@ const MLD = () => {
           <select
             value={soaSort}
             onChange={(e) => setSoaSort(e.target.value)}
+            id="mld-sort"
             style={{
               padding: "8px 12px",
               borderRadius: "8px",
@@ -470,6 +584,7 @@ const MLD = () => {
 
         <div style={tableContainerStyle}>
           <table
+            id="mld-upload-table"
             style={{ width: "100%", borderCollapse: "collapse", minWidth: 840 }}
           >
             <thead>
@@ -740,6 +855,7 @@ const MLD = () => {
                       >
                         <button
                           onClick={() => handleSingleButtonUpload(soaId)}
+                          id="mld-upload-btn"
                           style={{
                             backgroundColor: hasUploaded
                               ? "#2ecc71"
@@ -809,8 +925,9 @@ const MLD = () => {
                               </div>
                             ) : (
                               // Only show Approve button if user is Risk Owner
-                              user?.role === "Risk Owner" && (
+                              user?.role === "risk_owner" && (
                                 <button
+                                  id="mld-approve-btn"
                                   onClick={handleApprove}
                                   style={{
                                     backgroundColor: "#2ecc71",
@@ -835,6 +952,7 @@ const MLD = () => {
 
                             <button
                               onClick={() => handleDeleteForSoA(soaId)}
+                              id="mld-delete-btn"
                               style={{
                                 backgroundColor: "#e74c3c",
                                 color: "white",

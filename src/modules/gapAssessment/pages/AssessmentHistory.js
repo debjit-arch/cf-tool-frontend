@@ -9,6 +9,28 @@ const AssessmentHistory = () => {
   const gapsPerPage = 5;
   const history = useHistory();
 
+  const [showButtons, setShowButtons] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > lastScrollY) {
+        // Scrolling down
+        setShowButtons(false);
+      } else {
+        // Scrolling up
+        setShowButtons(true);
+      }
+      setLastScrollY(window.scrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [lastScrollY]);
+
   useEffect(() => {
     const fetchGaps = async () => {
       try {
@@ -62,17 +84,36 @@ const AssessmentHistory = () => {
   };
 
   return (
-    <div style={{ marginTop: 60, padding: 15, maxWidth: 900, margin: "60px auto 0" }}>
-      {/* Back Button */}
+    <div
+      style={{
+        marginTop: 60,
+        padding: 15,
+        maxWidth: 900,
+        margin: "60px auto 0",
+      }}
+    >
       <button
-        style={backBtnStyle}
+        style={{
+          position: "sticky",
+          top: "0",
+          margin: "10px",
+          padding: "10px 24px",
+          borderRadius: "8px",
+          background: "#005FCC",
+          border: "none",
+          color: "#fff",
+          fontWeight: "500",
+          fontSize: "14px",
+          cursor: "pointer",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          transition: "transform 0.3s ease, opacity 0.3s ease",
+          zIndex: 999,
+          transform: showButtons ? "translateY(0)" : "translateY(-100%)",
+          opacity: showButtons ? 1 : 0,
+        }}
         onClick={() => history.push("/gap-assessment")}
-        onMouseEnter={handleBackBtnMouseEnter}
-        onMouseLeave={handleBackBtnMouseLeave}
-        title="Back to Gap Assessment Dashboard"
       >
-        <ArrowLeft size={18} />
-        Back to Dashboard
+        ← Back to Dashboard{" "}
       </button>
 
       {/* Header */}
@@ -87,7 +128,16 @@ const AssessmentHistory = () => {
           textAlign: "center",
         }}
       >
-        <h1 style={{ color: "#2c3e50", fontSize: 22, display: "flex", justifyContent: "center", alignItems: "center", gap: "8px" }}>
+        <h1
+          style={{
+            color: "#2c3e50",
+            fontSize: 22,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "8px",
+          }}
+        >
           <HistoryIcon size={22} /> Assessment History
         </h1>
         <p style={{ color: "#7f8c8d", fontSize: 14 }}>
@@ -129,7 +179,9 @@ const AssessmentHistory = () => {
                 <td style={tdStyle}>{gap.docName || "Unnamed Document"}</td>
                 <td style={tdStyle}>{gap.status}</td>
                 <td style={tdStyle}>{gap.score ?? "-"}</td>
-                <td style={tdStyle}>{(gap.missing_sections || []).join(", ") || "-"}</td>
+                <td style={tdStyle}>
+                  {(gap.missing_sections || []).join(", ") || "-"}
+                </td>
               </tr>
             ))
           )}
@@ -175,7 +227,9 @@ const AssessmentHistory = () => {
 
           {/* Next */}
           <button
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
             disabled={currentPage === totalPages}
             style={paginationButtonStyle(currentPage === totalPages)}
           >
@@ -188,7 +242,11 @@ const AssessmentHistory = () => {
 };
 
 // Styles
-const thStyle = { padding: 12, borderBottom: "1px solid #e9ecef", background: "#f8f9fa" };
+const thStyle = {
+  padding: 12,
+  borderBottom: "1px solid #e9ecef",
+  background: "#f8f9fa",
+};
 const tdStyle = { padding: 12, borderBottom: "1px solid #e9ecef" };
 
 const paginationButtonStyle = (disabled) => ({

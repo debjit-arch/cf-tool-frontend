@@ -23,8 +23,8 @@
 //       <div className="page-header">
 //         <h1>Add New Risk Assessment</h1>
 //       </div>
-      
-//       <MultiStepFormManager 
+
+//       <MultiStepFormManager
 //         onSubmit={handleSubmit}
 //         onCancel={handleCancel}
 //       />
@@ -33,7 +33,6 @@
 // };
 
 // export default AddRisk;
-
 
 // import React from 'react';
 // import { useLocation } from 'react-router-dom';
@@ -52,67 +51,72 @@
 //       <MultiStepFormManager onSubmit={handleSubmit} focusArea={focusArea} />
 
 //           </div>
-          
-    
+
 //   );
 // };
 
 // export default AddRisk;
 
-
-
-
-
-import React from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
-import MultiStepFormManager from '../components/forms/MultiStepFormManager';
+import React,{useEffect,useState} from "react";
+import { useHistory, useLocation } from "react-router-dom";
+import MultiStepFormManager from "../components/forms/MultiStepFormManager";
 
 const AddRisk = () => {
   const history = useHistory();
   const location = useLocation();
-  const focusArea = location.state?.focusArea || 'risk';
+  const focusArea = location.state?.focusArea || "risk";
+
+  const [showButtons, setShowButtons] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > lastScrollY) {
+        // Scrolling down
+        setShowButtons(false);
+      } else {
+        // Scrolling up
+        setShowButtons(true);
+      }
+      setLastScrollY(window.scrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [lastScrollY]);
 
   const handleSubmit = (formData) => {
-    console.log('Risk Assessment Data:', formData);
+    console.log("Risk Assessment Data:", formData);
     // submission logic here...
   };
 
   return (
-    <div className="page-container" style={{ padding: '30px 40px 0px 40px' }}>
-      
-
+    <div className="page-container" style={{ padding: "30px 40px 0px 40px" }}>
       <button
-        onClick={() => history.push('/risk-assessment')}
         style={{
-          position: 'fixed',
-          top: "28px",
-           right: "120px",
-          marginBottom: '30px',
-          padding: '10px 22px',
-          borderRadius: '6px',
-          backgroundColor: '#005FCC',
-          border: 'none',
-          color: 'white',
-          cursor: 'pointer',
-          fontWeight: '600',
-          fontSize: '1rem',
-          boxShadow: '0 4px 8px rgba(0, 95, 204, 0.3)',
-          transition: 'all 0.3s ease',
-          display: 'inline-flex',
-          alignItems: 'center'
+          position: "sticky",
+          top: "0",
+          margin: "10px",
+          padding: "10px 24px",
+          borderRadius: "8px",
+          background: "#005FCC",
+          border: "none",
+          color: "#fff",
+          fontWeight: "500",
+          fontSize: "14px",
+          cursor: "pointer",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          transition: "transform 0.3s ease, opacity 0.3s ease",
+          zIndex: 999,
+          transform: showButtons ? "translateY(0)" : "translateY(-100%)",
+          opacity: showButtons ? 1 : 0,
         }}
-        onMouseEnter={e => {
-          e.currentTarget.style.backgroundColor = '#0046a3';
-          e.currentTarget.style.boxShadow = '0 6px 12px rgba(0, 70, 163, 0.5)';
-          e.currentTarget.style.transform = 'translateY(-2px)';
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.backgroundColor = '#005FCC';
-          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 95, 204, 0.3)';
-          e.currentTarget.style.transform = 'translateY(0)';
-        }}
+        onClick={() => history.push("/risk-assessment")}
       >
-        ← Back to Dashboard
+        ← Back to Dashboard{" "}
       </button>
 
       <MultiStepFormManager onSubmit={handleSubmit} focusArea={focusArea} />
@@ -121,4 +125,3 @@ const AddRisk = () => {
 };
 
 export default AddRisk;
-

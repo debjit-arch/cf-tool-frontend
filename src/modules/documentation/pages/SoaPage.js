@@ -15,6 +15,28 @@ const SoaPage = () => {
   const history = useHistory();
   const [controls, setControls] = useState([]);
 
+  const [showButtons, setShowButtons] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > lastScrollY) {
+        // Scrolling down
+        setShowButtons(false);
+      } else {
+        // Scrolling up
+        setShowButtons(true);
+      }
+      setLastScrollY(window.scrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [lastScrollY]);
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const controlsPerPage = 8;
@@ -204,12 +226,27 @@ const SoaPage = () => {
       }}
     >
       <button
-        style={backBtnStyle}
+        style={{
+          position: "sticky",
+          top: "0",
+          margin: "10px",
+          padding: "10px 24px",
+          borderRadius: "8px",
+          background: "#005FCC",
+          border: "none",
+          color: "#fff",
+          fontWeight: "500",
+          fontSize: "14px",
+          cursor: "pointer",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          transition: "transform 0.3s ease, opacity 0.3s ease",
+          zIndex: 999,
+          transform: showButtons ? "translateY(0)" : "translateY(-100%)",
+          opacity: showButtons ? 1 : 0,
+        }}
         onClick={() => history.push("/documentation")}
-        onMouseEnter={handleBackBtnMouseEnter}
-        onMouseLeave={handleBackBtnMouseLeave}
       >
-        ← Back to Dashboard
+        ← Back to Dashboard{" "}
       </button>
 
       <div

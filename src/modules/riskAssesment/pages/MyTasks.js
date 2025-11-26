@@ -10,6 +10,28 @@ const MyTasks = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [showButtons, setShowButtons] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > lastScrollY) {
+        // Scrolling down
+        setShowButtons(false);
+      } else {
+        // Scrolling up
+        setShowButtons(true);
+      }
+      setLastScrollY(window.scrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [lastScrollY]);
+
   const STATUS = {
     PENDING: "Pending",
     COMPLETED_PENDING: "Completed (Pending Approval)",
@@ -213,12 +235,27 @@ const MyTasks = () => {
   return (
     <>
       <button
-        style={backBtnStyle}
+        style={{
+          position: "sticky",
+          top: "0",
+          margin: "10px",
+          padding: "10px 24px",
+          borderRadius: "8px",
+          background: "#005FCC",
+          border: "none",
+          color: "#fff",
+          fontWeight: "500",
+          fontSize: "14px",
+          cursor: "pointer",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          transition: "transform 0.3s ease, opacity 0.3s ease",
+          zIndex: 999,
+          transform: showButtons ? "translateY(0)" : "translateY(-100%)",
+          opacity: showButtons ? 1 : 0,
+        }}
         onClick={() => history.push("/risk-assessment")}
-        onMouseEnter={handleBackBtnMouseEnter}
-        onMouseLeave={handleBackBtnMouseLeave}
       >
-        ← Back to Dashboard
+        ← Back to Dashboard{" "}
       </button>
 
       <div style={pageStyle}>
@@ -228,7 +265,9 @@ const MyTasks = () => {
         </div>
 
         {tasks.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px", color: "#7f8c8d" }}>
+          <div
+            style={{ textAlign: "center", padding: "40px", color: "#7f8c8d" }}
+          >
             No tasks assigned to you yet.
           </div>
         ) : (
@@ -247,17 +286,24 @@ const MyTasks = () => {
                 <tr key={task.taskId}>
                   <td style={tdStyle}>{task.description || "—"}</td>
                   <td style={tdStyle}>
-                    {task.startDate ? new Date(task.startDate).toLocaleDateString() : "—"}
+                    {task.startDate
+                      ? new Date(task.startDate).toLocaleDateString()
+                      : "—"}
                   </td>
                   <td style={tdStyle}>
-                    {task.endDate ? new Date(task.endDate).toLocaleDateString() : "—"}
+                    {task.endDate
+                      ? new Date(task.endDate).toLocaleDateString()
+                      : "—"}
                   </td>
                   <td style={tdStyle}>
-                    <span style={statusBadgeStyle(task.status)}>{task.status || "—"}</span>
+                    <span style={statusBadgeStyle(task.status)}>
+                      {task.status || "—"}
+                    </span>
                   </td>
                   <td style={tdStyle}>
                     {task.status === STATUS.PENDING &&
-                      String(task.employee) === String(user.name || user.id) && (
+                      String(task.employee) ===
+                        String(user.name || user.id) && (
                         <button
                           style={{ ...buttonStyle, background: "#2ecc71" }}
                           onClick={() => markTaskComplete(task.taskId)}
@@ -266,8 +312,12 @@ const MyTasks = () => {
                         </button>
                       )}
 
-                    {task.status === STATUS.COMPLETED_PENDING && <span>✅ Waiting for approval</span>}
-                    {task.status === STATUS.APPROVED && <span>✅ Approved</span>}
+                    {task.status === STATUS.COMPLETED_PENDING && (
+                      <span>✅ Waiting for approval</span>
+                    )}
+                    {task.status === STATUS.APPROVED && (
+                      <span>✅ Approved</span>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -10,181 +10,41 @@ import {
   FolderOpen,
 } from "lucide-react";
 
+import Joyride from "react-joyride";
+
 const RiskAssessment = () => {
   const history = useHistory();
 
   const [user] = useState(() => JSON.parse(sessionStorage.getItem("user")));
 
-  const [tourStep, setTourStep] = useState(0);
-  const [tourActive, setTourActive] = useState(true);
-  const [spotlightStyle, setSpotlightStyle] = useState({});
-  const [tooltipStyle, setTooltipStyle] = useState({});
+  const [run, setRun] = useState(false);
 
-  const totalRiskRef = useRef(null);
-  const sampleRiskRef = useRef(null);
-  const quickActionsRef = useRef(null);
-  const myRisksRef = useRef(null);
-  const taskRef = useRef(null);
-
-  const tourSteps = [
+  const steps = [
     {
-      title: "Welcome to Risk Management",
-      text: "Let’s take a quick tour of what each tile does.",
-      ref: null,
+      target: "#header-title",
+      content: "Welcome! This is your Risk Management Dashboard. ",
     },
     {
-      title: "Risk Statistics",
-      text: "These cards show the total, low, medium, high, open, and closed risks.",
-      ref: totalRiskRef,
+      target: "#stats-cards",
+      content: "These tiles show a quick snapshot of your department risks.",
     },
     {
-      title: "Sample Risks",
-      text: "Choose ready-made risks from the library.",
-      ref: sampleRiskRef,
+      target: "#sample-risk-card",
+      content: "Browse sample risks for quicker assessment.",
     },
     {
-      title: "Add New Risks",
-      text: "Shortcuts to add new risks and assign or manage Tasks.",
-      ref: quickActionsRef,
+      target: "#add-risk-card",
+      content: "Click here to add a new risk.",
     },
     {
-      title: "My Tasks",
-      text: "View the Tasks assigned to you.",
-      ref: taskRef,
+      target: "#task-card",
+      content: "See tasks assigned to you by risk managers.",
     },
     {
-      title: "My Risks",
-      text: "All risks assigned to your department.",
-      ref: myRisksRef,
+      target: "#my-risks-card",
+      content: "View all risks identified for your department.",
     },
   ];
-
-  const spotlightStyles = `
-  .tour-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.65);
-    backdrop-filter: none;
-    z-index: 9998;
-  }
-
-  .tour-spotlight {
-    position: absolute;
-    background: transparent;
-    border: 2px solid #3498db;
-    border-radius: 12px;
-    box-shadow: 0 0 0 2000px rgba(0,0,0,0.65);
-    z-index: 9999;
-    transition: all 0.25s ease;
-  }
-
-  .tour-tooltip {
-    position: absolute;
-    background: white;
-    padding: 14px 18px;
-    border-radius: 10px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.25);
-    z-index: 10000;
-    width: 260px;
-    animation: fadeIn 0.25s ease;
-  }
-
-  .tour-buttons {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 12px;
-  }
-
-  .tour-btn {
-    padding: 8px 14px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-  }
-
-  .btn-next { background: #3498db; color: white; }
-  .btn-skip { background: #7f8c8d; color: white; }
-  .btn-prev { background: #95a5a6; color: white; }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-`;
-
-  // useEffect(() => {
-  //   if (!tourActive) return;
-
-  //   const step = tourSteps[tourStep];
-
-  //   setTimeout(() => {
-  //     // Step without an element (e.g., Welcome)
-  //     if (!step.ref || !step.ref.current) {
-  //       setSpotlightStyle({ display: "none" });
-
-  //       setTooltipStyle({
-  //         top: "40%",
-  //         left: "50%",
-  //         transform: "translate(-50%, -50%)",
-  //       });
-
-  //       return;
-  //     }
-
-  //     const el = step.ref.current.getBoundingClientRect();
-
-  //     setSpotlightStyle({
-  //       top: el.top - 10 + "px",
-  //       left: el.left - 10 + "px",
-  //       width: el.width + 20 + "px",
-  //       height: el.height + 20 + "px",
-  //       display: "block",
-  //     });
-
-  //     setTooltipStyle({
-  //       top: el.bottom + 15 + "px",
-  //       left: el.left + "px",
-  //       transform: "translate(0, 0)",
-  //     });
-
-  //     window.scrollTo({ top: el.top - 80, behavior: "smooth" });
-  //   }, 50);
-  // }, [tourStep, tourActive]);
-
-  useEffect(() => {
-    if (!tourActive) return;
-
-    const step = tourSteps[tourStep];
-    if (!step.ref || !step.ref.current) {
-      setTooltipStyle({
-        top: "40%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-      });
-      return;
-    }
-
-    const el = step.ref.current;
-
-    // Scroll element into view smoothly, center it
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-
-    // Wait until next animation frame to calculate tooltip position
-    requestAnimationFrame(() => {
-      const rect = el.getBoundingClientRect();
-      setTooltipStyle({
-        top: window.scrollY + rect.bottom + 10 + "px",
-        left: rect.left + rect.width / 2 + "px",
-        transform: "translateX(-50%)",
-      });
-    });
-  }, [tourStep, tourActive]);
-
-  useEffect(() => {
-    const styleTag = document.createElement("style");
-    styleTag.innerHTML = spotlightStyles;
-    document.head.appendChild(styleTag);
-  }, []);
 
   const [riskStats, setRiskStats] = useState({
     total: 0,
@@ -333,21 +193,47 @@ const RiskAssessment = () => {
 
   return (
     <div style={pageStyle}>
+      <Joyride
+        steps={steps}
+        run={run}
+        continuous
+        showSkipButton
+        scrollToFirstStep
+      />
       {/* Header */}
       <div style={headerStyle}>
-        <h1 style={{ color: "#2c3e50", marginBottom: "5px", fontSize: "22px" }}>
+        <h1
+          id="header-title"
+          style={{ color: "#2c3e50", marginBottom: "5px", fontSize: "22px" }}
+        >
           <BarChart3 size={24} style={{ marginRight: "8px" }} />
           Risk Management Dashboard
         </h1>
         <p style={{ color: "#7f8c8d", fontSize: "14px" }}>
           Identify, Manage, and Treat Risk.
         </p>
+        {/* START TOUR BUTTON */}
+        <button
+          onClick={() => {
+            setRun(false);
+            setTimeout(() => setRun(true), 50); // restart Joyride
+          }}
+          style={{
+            marginTop: "10px",
+            padding: "8px 16px",
+            background: "#3498db",
+            color: "white",
+            borderRadius: "6px",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          Tutorial
+        </button>
       </div>
-
       {/* Stats Cards */}
-      <div style={statsStyle}>
+      <div id="stats-cards" style={statsStyle}>
         <div
-          ref={totalRiskRef}
           style={{ ...statCardStyle, borderLeft: "3px solid #3498db" }}
           onClick={() => history.push("/risk-assessment/saved")}
           onMouseEnter={(e) =>
@@ -508,7 +394,7 @@ const RiskAssessment = () => {
       {/* Quick Actions */}
       <div style={actionsStyle}>
         <div
-          ref={sampleRiskRef}
+          id="sample-risk-card"
           style={actionCardStyle}
           onClick={() => history.push("/risk-assessment/templates")}
           onMouseEnter={(e) =>
@@ -533,7 +419,7 @@ const RiskAssessment = () => {
         </div>
 
         <div
-          ref={quickActionsRef}
+          id="add-risk-card"
           style={{
             ...actionCardStyle,
             background: "linear-gradient(135deg, #3498db 0%, #2980b9 100%)",
@@ -557,6 +443,7 @@ const RiskAssessment = () => {
         </div>
 
         <div
+          id="task-card"
           style={actionCardStyle}
           onClick={() => history.push("/risk-assessment/my-tasks")}
           onMouseEnter={(e) =>
@@ -565,7 +452,6 @@ const RiskAssessment = () => {
           onMouseLeave={(e) =>
             (e.currentTarget.style.transform = "translateY(0)")
           }
-          ref={taskRef}
         >
           <CheckCircle
             size={32}
@@ -585,7 +471,7 @@ const RiskAssessment = () => {
           user.role === "risk_manager" ||
           user.role === "super_admin") && (
           <div
-            ref={myRisksRef}
+            id="my-risks-card"
             style={actionCardStyle}
             onClick={() => history.push("/risk-assessment/saved")}
             onMouseEnter={(e) =>
@@ -614,48 +500,6 @@ const RiskAssessment = () => {
           </div>
         )}
       </div>
-      {tourActive && (
-        <>
-          <div className="tour-overlay"></div>
-
-          <div className="tour-spotlight" style={spotlightStyle}></div>
-
-          <div className="tour-tooltip" style={tooltipStyle}>
-            <h3>{tourSteps[tourStep].title}</h3>
-            <p>{tourSteps[tourStep].text}</p>
-
-            <div className="tour-buttons">
-              <button
-                className="tour-btn btn-prev"
-                disabled={tourStep === 0}
-                onClick={() => setTourStep((prev) => prev - 1)}
-              >
-                Previous
-              </button>
-
-              <button
-                className="tour-btn btn-next"
-                onClick={() => {
-                  if (tourStep === tourSteps.length - 1) {
-                    setTourActive(false);
-                  } else {
-                    setTourStep((prev) => prev + 1);
-                  }
-                }}
-              >
-                {tourStep === tourSteps.length - 1 ? "Finish" : "Next"}
-              </button>
-
-              <button
-                className="tour-btn btn-skip"
-                onClick={() => setTourActive(false)}
-              >
-                Skip
-              </button>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 };

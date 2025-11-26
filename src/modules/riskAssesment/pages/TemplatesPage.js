@@ -17,6 +17,28 @@ const RiskTemplateTable = () => {
   const risksPerPage = 5;
   const history = useHistory();
 
+  const [showButtons, setShowButtons] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > lastScrollY) {
+        // Scrolling down
+        setShowButtons(false);
+      } else {
+        // Scrolling up
+        setShowButtons(true);
+      }
+      setLastScrollY(window.scrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [lastScrollY]);
+
   const [infoModal, setInfoModal] = useState({
     isOpen: false,
     title: "",
@@ -302,18 +324,27 @@ const RiskTemplateTable = () => {
       }}
     >
       <button
-        style={backBtnStyle}
+        style={{
+          position: "sticky",
+          top: "0",
+          margin: "10px",
+          padding: "10px 24px",
+          borderRadius: "8px",
+          background: "#005FCC",
+          border: "none",
+          color: "#fff",
+          fontWeight: "500",
+          fontSize: "14px",
+          cursor: "pointer",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          transition: "transform 0.3s ease, opacity 0.3s ease",
+          zIndex: 999,
+          transform: showButtons ? "translateY(0)" : "translateY(-100%)",
+          opacity: showButtons ? 1 : 0,
+        }}
         onClick={() => history.push("/risk-assessment")}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = "#0046a3";
-          e.currentTarget.style.transform = "translateY(-2px)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = "#005FCC";
-          e.currentTarget.style.transform = "translateY(0)";
-        }}
       >
-        ← Back to Dashboard
+        ← Back to Dashboard{" "}
       </button>
 
       <h2 style={{ textAlign: "center", marginBottom: "18px", color: "#222" }}>
