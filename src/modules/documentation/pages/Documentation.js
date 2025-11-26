@@ -3,6 +3,7 @@ import { useHistory } from "react-router-dom";
 import documentationService from "../services/documentationService";
 import { FileText, FileSpreadsheet, Shield, BookOpen } from "lucide-react"; // 🔹 Added Lucide icons
 import Joyride, { STATUS } from "react-joyride";
+import { DOCUMENT_MAPPING } from "../constants";
 
 const Documentation = () => {
   const history = useHistory();
@@ -12,21 +13,35 @@ const Documentation = () => {
     pending: 0,
   });
 
+  const user = JSON.parse(sessionStorage.getItem("user"));
+  const role = user?.role || "";
+
   useEffect(() => {
     const loadDocumentStats = async () => {
       try {
+        const soas = (await documentationService.getSoAEntries()) || [];
         const docs = (await documentationService.getDocuments()) || [];
-        const soaList = (await documentationService.getSoAEntries()) || [];
 
-        const total = Array.isArray(soaList) ? soaList.length : 0;
+        const total = Array.isArray(soas) ? soas.length : 0;
 
         // Count uploaded documents per SoA
         const uploadedCount = Array.isArray(docs) ? docs.length : 0;
+        // Filter & sort as in your MLD logic
+        let filteredAndSortedSoas = [...soas];
+
+        // optional: if you want search/sort here, add conditions similar to your MLD useMemo
+
+        // Get department-specific uploaded docs
+        const { docCount, userDocs } = getDocsForUser(
+          filteredAndSortedSoas,
+          user,
+          docs
+        );
 
         setDocumentStats({
-          total,
-          uploaded: uploadedCount,
-          pending: total - uploadedCount,
+          total: userDocs.length,
+          uploaded: docCount,
+          pending: userDocs.length - docCount,
         });
       } catch (error) {
         console.error("Error loading document stats:", error);
@@ -35,28 +50,56 @@ const Documentation = () => {
     };
 
     loadDocumentStats();
-  }, []);
+  }, [user]);
 
+  const getDocsForUser = (soas, user, docs) => {
+    const docsSet = new Set();
+    let docCount = 0;
+    docs.forEach((doc) => {
+      soas.forEach((soa) => {
+        if(doc.soaId === soa.id.toString() && user.department.name === doc.departmentName)
+          docCount=docCount+1;
+        const refs = Array.isArray(soa.documentRef)
+          ? soa.documentRef
+          : [soa.documentRef];
+        refs.forEach((ref) => {
+          for (const key in DOCUMENT_MAPPING) {
+            if (
+              DOCUMENT_MAPPING[key].docs?.includes(ref) &&
+              DOCUMENT_MAPPING[key].dept.some((d) =>
+                user.department.name.includes(d)
+              )
+            ) {
+              docsSet.add(ref);
+            }
+          }
+        });
+      });
+    });
+    return { docCount, userDocs: Array.from(docsSet) };
+  };
   // User and role loaded once
-  const user = JSON.parse(sessionStorage.getItem("user"));
-  const role = user?.role || "";
   const [joyrideRun, setJoyrideRun] = useState(false);
   const joyrideSteps = [
     {
       target: "#total-risks",
-      content: "This shows the total number of documents need to uploaded by the organization.",
+      content:
+        "This shows the total number of documents need to uploaded by the organization.",
     },
     {
       target: "#with-controls",
-      content: "This shows the number of documents already uploaded by the organization.",
+      content:
+        "This shows the number of documents already uploaded by the organization.",
     },
     {
       target: "#without-controls",
-      content: "This shows the number of documents yet to be uploaded by the organization.",
+      content:
+        "This shows the number of documents yet to be uploaded by the organization.",
     },
     {
       target: "#mld-button",
-      content: "Click here to access the Master List of Documents (MLD). Here you can go and upload the required documents for your department",
+      content:
+        "Click here to access the Master List of Documents (MLD). Here you can go and upload the required documents for your department",
     },
   ];
 
@@ -134,10 +177,6 @@ const Documentation = () => {
       {/* Header */}
       <div style={headerStyle}>
         <h1 style={{ color: "#2c3e50", marginBottom: "8px", fontSize: "22px" }}>
-          <FileText
-            size={22}
-            style={{ marginRight: 6, verticalAlign: "middle" }}
-          />
           Documentation Dashboard
         </h1>
         <p style={{ color: "#7f8c8d", fontSize: "14px" }}>
@@ -318,10 +357,9 @@ const Documentation = () => {
             (e.currentTarget.style.transform = "translateY(0)")
           }
         >
-          <BookOpen style={iconStyle} />
-          <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>MLD</h3>
+          <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>List of Documents</h3>
           <p style={{ margin: 0, fontSize: "13px", opacity: 0.9 }}>
-            List of Documents
+            
           </p>
         </div>
       </div>

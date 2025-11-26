@@ -51,8 +51,7 @@ const MLD = () => {
     },
     {
       target: "#mld-search",
-      content:
-        "Use this search box to filter by document reference.",
+      content: "Use this search box to filter by document reference.",
     },
     {
       target: "#mld-sort",
@@ -65,8 +64,7 @@ const MLD = () => {
     },
     {
       target: "#mld-upload-btn",
-      content:
-        "Click this button to upload a document.",
+      content: "Click this button to upload a document.",
     },
     {
       target: "#mld-approve-btn",
@@ -152,6 +150,37 @@ const MLD = () => {
     }
   };
 
+  const getDocsForUser = (soas, user, documents) => {
+    const docsSet = new Set();
+    let docCount = 0;
+    documents.forEach((doc) => {
+      soas.forEach((soa) => {
+        if (
+          doc.soaId === soa.id.toString() &&
+          user.department.name === doc.departmentName
+        )
+          docCount++;
+        const refs = Array.isArray(soa.documentRef)
+          ? soa.documentRef
+          : [soa.documentRef];
+
+        refs.forEach((ref) => {
+          for (const key in DOCUMENT_MAPPING) {
+            if (
+              DOCUMENT_MAPPING[key].docs?.includes(ref) &&
+              DOCUMENT_MAPPING[key].dept.some((d) =>
+                user.department.name.includes(d)
+              )
+            ) {
+              docsSet.add(ref);
+            }
+          }
+        });
+      });
+    });
+
+    return { docCount, userDocs: Array.from(docsSet) };
+  };
   const closePreviewModal = () => {
     setPreviewModalOpen(false);
     setPreviewUrl("");
@@ -395,6 +424,12 @@ const MLD = () => {
 
   const tableContainerStyle = { width: "100%", overflowX: "auto" };
 
+  const { docCount, userDocs } = getDocsForUser(
+    filteredAndSortedSoas,
+    user,
+    documents
+  );
+
   // ==================== RENDER ====================
   return (
     <div
@@ -481,7 +516,7 @@ const MLD = () => {
         <h1
           style={{ marginBottom: "8px", fontSize: "28px", fontWeight: "700" }}
         >
-          📚 Master List of Documents
+          Master List of Documents
         </h1>
         <p style={{ fontSize: "16px", opacity: 0.95, marginBottom: "12px" }}>
           Upload and manage your documents
@@ -497,11 +532,11 @@ const MLD = () => {
         >
           <div>
             <span style={{ fontWeight: 600 }}>Total Documents to Upload:</span>{" "}
-            {filteredAndSortedSoas.length}
+            {userDocs.length}
           </div>
           <div>
             <span style={{ fontWeight: 600 }}>Documents Uploaded:</span>{" "}
-            {documents.length}
+            {docCount}
           </div>
         </div>
       </div>
@@ -556,7 +591,7 @@ const MLD = () => {
           className="controls-right"
           style={{ color: "#666", fontSize: "14px" }}
         >
-          Showing {currentSoAs.length} upload entries
+          Showing {userDocs.length} upload entries
         </div>
       </div>
 
@@ -579,7 +614,7 @@ const MLD = () => {
             paddingBottom: "8px",
           }}
         >
-          📤 Upload Documents
+          Upload Documents
         </h2>
 
         <div style={tableContainerStyle}>
@@ -680,7 +715,7 @@ const MLD = () => {
               </tr>
             </thead>
             <tbody>
-              {currentSoAs.length === 0 ? (
+              {userDocs.length === 0 ? (
                 <tr>
                   <td
                     colSpan="8"
@@ -694,31 +729,25 @@ const MLD = () => {
                   </td>
                 </tr>
               ) : (
-                currentSoAs.map((soa, idx) => {
-                  const soaId = soa.id;
-                  const count = getUploadedCount(soaId);
-                  const hasUploaded = count > 0;
-                  const doc = documents.find(
-                    (d) => String(d.soaId) === String(soa.id)
+                userDocs.map((docName, idx) => {
+                  // Find the SoA corresponding to this docName
+                  const soa = filteredAndSortedSoas.find((s) =>
+                    (Array.isArray(s.documentRef)
+                      ? s.documentRef
+                      : [s.documentRef]
+                    ).includes(docName)
                   );
 
-                  // --- Get department from DOCUMENT_MAPPING ---
-                  const firstRef = Array.isArray(soa.documentRef)
-                    ? soa.documentRef[0]
-                    : soa.documentRef;
+                  const soaId = soa?.id;
+                  const count = getUploadedCount(soaId);
+                  const hasUploaded = count > 0;
 
-                  let departmentFromMapping = "—";
+                  const doc = documents.find(
+                    (d) => String(d.soaId) === String(soaId)
+                  );
 
-                  for (const key in DOCUMENT_MAPPING) {
-                    if (DOCUMENT_MAPPING[key].docs?.includes(firstRef)) {
-                      departmentFromMapping = Array.isArray(
-                        DOCUMENT_MAPPING[key].dept
-                      )
-                        ? DOCUMENT_MAPPING[key].dept.join(", ")
-                        : DOCUMENT_MAPPING[key].dept;
-                      break;
-                    }
-                  }
+                  // Department from mapping
+                  const departmentFromMapping = user?.department?.name || "—";
 
                   const approvalDate = doc?.approvalDate
                     ? new Date(doc.approvalDate).toISOString().split("T")[0]
