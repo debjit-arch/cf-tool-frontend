@@ -47,26 +47,26 @@ const MLD = () => {
     {
       target: "#mld-header",
       content:
-        "This is your Master List of Documents. You can upload and manage documents per SoA here.",
+        "This is your Master List of Documents. You can upload and manage documents which are required.",
     },
     {
       target: "#mld-search",
       content:
-        "Use this search box to filter SoA entries by document reference.",
+        "Use this search box to filter by document reference.",
     },
     {
       target: "#mld-sort",
-      content: "Sort your SoA entries by date or name using this dropdown.",
+      content: "Sort your documents by date or name using this dropdown.",
     },
     {
       target: "#mld-upload-table",
       content:
-        "This table shows all SoA entries with their uploaded documents. You can preview, upload, approve, or delete documents here.",
+        "This table shows all required uploaded documents. You can preview, upload, approve, or delete documents here.",
     },
     {
       target: "#mld-upload-btn",
       content:
-        "Click this button to upload a document for a specific SoA entry.",
+        "Click this button to upload a document.",
     },
     {
       target: "#mld-approve-btn",
@@ -75,7 +75,7 @@ const MLD = () => {
     },
     {
       target: "#mld-delete-btn",
-      content: "Delete a document for a SoA entry using this button.",
+      content: "Delete a document using this button.",
     },
   ];
 
