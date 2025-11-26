@@ -484,7 +484,7 @@ const MLD = () => {
           📚 Master List of Documents
         </h1>
         <p style={{ fontSize: "16px", opacity: 0.95, marginBottom: "12px" }}>
-          Upload and manage your documents per SoA
+          Upload and manage your documents
         </p>
         <div
           style={{
@@ -496,8 +496,8 @@ const MLD = () => {
           }}
         >
           <div>
-            <span style={{ fontWeight: 600 }}>Total SoA Entries:</span>{" "}
-            {soas.length}
+            <span style={{ fontWeight: 600 }}>Total Documents to Upload:</span>{" "}
+            {filteredAndSortedSoas.length}
           </div>
           <div>
             <span style={{ fontWeight: 600 }}>Documents Uploaded:</span>{" "}

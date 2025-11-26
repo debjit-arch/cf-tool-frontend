@@ -44,19 +44,19 @@ const Documentation = () => {
   const joyrideSteps = [
     {
       target: "#total-risks",
-      content: "This shows the total number of risks in the system.",
+      content: "This shows the total number of documents need to uploaded by the organization.",
     },
     {
       target: "#with-controls",
-      content: "This shows risks that already have controls associated.",
+      content: "This shows the number of documents already uploaded by the organization.",
     },
     {
       target: "#without-controls",
-      content: "This shows risks without controls yet.",
+      content: "This shows the number of documents yet to be uploaded by the organization.",
     },
     {
       target: "#mld-button",
-      content: "Click here to access the Master List of Documents (MLD).",
+      content: "Click here to access the Master List of Documents (MLD). Here you can go and upload the required documents for your department",
     },
   ];
 
@@ -321,7 +321,7 @@ const Documentation = () => {
           <BookOpen style={iconStyle} />
           <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>MLD</h3>
           <p style={{ margin: 0, fontSize: "13px", opacity: 0.9 }}>
-            Master List of Documents
+            List of Documents
           </p>
         </div>
       </div>
