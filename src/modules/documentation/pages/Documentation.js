@@ -180,8 +180,7 @@ const Documentation = () => {
           Documentation Dashboard
         </h1>
         <p style={{ color: "#7f8c8d", fontSize: "14px" }}>
-          Generate and manage your Statement of Applicability (SoA) and control
-          documentation.
+          Upload and manage the required documents for your.
         </p>
         <button
           onClick={() => setJoyrideRun(true)}
