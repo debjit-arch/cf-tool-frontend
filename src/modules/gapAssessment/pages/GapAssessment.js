@@ -132,7 +132,6 @@ const GapAssessmentDashboard = ({ refreshTrigger }) => {
             gap: "10px",
           }}
         >
-          <ShieldCheck size={24} color="#2980b9" />
           <h1
             id="gap-header-title"
             style={{ color: "#2c3e50", marginBottom: "6px", fontSize: "22px" }}
@@ -175,7 +174,6 @@ const GapAssessmentDashboard = ({ refreshTrigger }) => {
             (e.currentTarget.style.transform = "translateY(0)")
           }
         >
-          <FileText size={28} color="#2980b9" />
           <h2 style={{ color: "#2980b9", margin: "6px 0", fontSize: "26px" }}>
             {gapStats.total}
           </h2>
@@ -202,7 +200,6 @@ const GapAssessmentDashboard = ({ refreshTrigger }) => {
             (e.currentTarget.style.transform = "translateY(0)")
           }
         >
-          <CheckCircle2 size={28} color="#27ae60" />
           <h2 style={{ color: "#27ae60", margin: "6px 0", fontSize: "26px" }}>
             {gapStats.closed}
           </h2>
@@ -229,7 +226,6 @@ const GapAssessmentDashboard = ({ refreshTrigger }) => {
             (e.currentTarget.style.transform = "translateY(0)")
           }
         >
-          <AlertTriangle size={28} color="#e74c3c" />
           <h2 style={{ color: "#e74c3c", margin: "6px 0", fontSize: "26px" }}>
             {gapStats.open}
           </h2>
@@ -262,7 +258,7 @@ const GapAssessmentDashboard = ({ refreshTrigger }) => {
             (e.currentTarget.style.transform = "translateY(0)")
           }
         >
-          <FilePlus2 size={34} color="white" />
+          
           <h3
             style={{ margin: "8px 0 4px", fontSize: "16px", fontWeight: "600" }}
           >
@@ -287,7 +283,6 @@ const GapAssessmentDashboard = ({ refreshTrigger }) => {
             (e.currentTarget.style.transform = "translateY(0)")
           }
         >
-          <FileText size={34} color="white" />
           <h3
             style={{ margin: "8px 0 4px", fontSize: "16px", fontWeight: "600" }}
           >

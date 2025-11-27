@@ -206,7 +206,6 @@ const RiskAssessment = () => {
           id="header-title"
           style={{ color: "#2c3e50", marginBottom: "5px", fontSize: "22px" }}
         >
-          <BarChart3 size={24} style={{ marginRight: "8px" }} />
           Risk Management Dashboard
         </h1>
         <p style={{ color: "#7f8c8d", fontSize: "14px" }}>
@@ -404,10 +403,6 @@ const RiskAssessment = () => {
             (e.currentTarget.style.transform = "translateY(0)")
           }
         >
-          <FileText
-            size={32}
-            style={{ marginBottom: "10px", color: "#3498db" }}
-          />
           <h3
             style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#2c3e50" }}
           >
@@ -433,7 +428,6 @@ const RiskAssessment = () => {
             (e.currentTarget.style.transform = "translateY(0)")
           }
         >
-          <PlusCircle size={32} style={{ marginBottom: "10px" }} />
           <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>
             Add New Risk
           </h3>
@@ -453,10 +447,6 @@ const RiskAssessment = () => {
             (e.currentTarget.style.transform = "translateY(0)")
           }
         >
-          <CheckCircle
-            size={32}
-            style={{ marginBottom: "10px", color: "#2ecc71" }}
-          />
           <h3
             style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#2c3e50" }}
           >
@@ -481,10 +471,6 @@ const RiskAssessment = () => {
               (e.currentTarget.style.transform = "translateY(0)")
             }
           >
-            <FolderOpen
-              size={32}
-              style={{ marginBottom: "10px", color: "#2c3e50" }}
-            />
             <h3
               style={{
                 margin: "0 0 6px 0",

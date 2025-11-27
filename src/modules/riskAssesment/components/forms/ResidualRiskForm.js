@@ -167,7 +167,7 @@ const ResidualRiskForm = ({ formData = {}, handleInputChange }) => {
         }}
       >
         <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "12px" }}>
-          📅 Task Scheduling
+          Task Scheduling
         </h3>
         <div
           style={{
@@ -207,7 +207,7 @@ const ResidualRiskForm = ({ formData = {}, handleInputChange }) => {
               fontSize: "14px",
             }}
           >
-            📅 {formatDateForDisplay(calculateDeadlineDate())}
+             {formatDateForDisplay(calculateDeadlineDate())}
           </div>
         )}
       </div>
@@ -222,7 +222,7 @@ const ResidualRiskForm = ({ formData = {}, handleInputChange }) => {
         }}
       >
         <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "5px" }}>
-          🎯 Residual Risk Assessment
+           Residual Risk Assessment
         </h3>
         <p style={{ textAlign: "center", color: "#7f8c8d", fontSize: "12px" }}>
           Result from Risk Assessment
@@ -345,7 +345,7 @@ const ResidualRiskForm = ({ formData = {}, handleInputChange }) => {
                     color: "#f39c12",
                   }}
                 >
-                  ⚡ Recommended Actions
+                  Recommended Actions
                 </h4>
                 <div
                   style={{

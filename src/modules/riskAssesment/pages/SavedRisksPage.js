@@ -312,7 +312,6 @@ const SavedRisksPage = () => {
       <style>{responsiveStyle}</style>
 
       {/* Digital Timer */}
-      <DigitalTimer />
 
       {/* Back to Dashboard Button */}
       <button
@@ -342,7 +341,7 @@ const SavedRisksPage = () => {
       {/* Header */}
       <div style={headerStyle} className="header-style">
         <h1 style={{ color: "#2c3e50", marginBottom: "10px" }}>
-          📁 Saved Risk Assessments
+          Saved Risk Assessments
         </h1>
         <p style={{ color: "#7f8c8d", fontSize: "16px" }}>
           View, edit, and manage your completed risk assessments
@@ -381,7 +380,7 @@ const SavedRisksPage = () => {
               transition: "all 0.3s ease",
             }}
           >
-            🚀 Create First Risk Assessment
+            Create First Risk Assessment
           </button>
         </div>
       ) : (
@@ -394,6 +393,7 @@ const SavedRisksPage = () => {
             marginBottom: "30px",
           }}
         >
+          <DigitalTimer />
           <table
             style={{
               width: "100%",
@@ -426,6 +426,18 @@ const SavedRisksPage = () => {
                   }}
                 >
                   Description
+                </th>
+                <th
+                  style={{
+                    padding: "16px 12px",
+                    textAlign: "left",
+                    fontWeight: "600",
+                    fontSize: "15px",
+                    border: "2px solid #dee2e6",
+                    color: "#495057",
+                  }}
+                >
+                  Time Stamp
                 </th>
                 <th
                   style={{
@@ -531,10 +543,20 @@ const SavedRisksPage = () => {
                           justifyContent: "center",
                           flexShrink: 0,
                         }}
-                      >
-                        👁️
-                      </span>
+                      ></span>
                       <span>{risk.riskDescription || "—"}</span>
+                    </td>
+                    <td
+                      style={{
+                        padding: "12px",
+                        textAlign: "center",
+                        fontWeight: "600",
+                        color: "#2c3e50",
+                        fontSize: "16px",
+                      }}
+                    >
+                      {/* {risk.date} */}
+                      {risk.date.split('-').reverse().join('-')}
                     </td>
                     <td
                       style={{
@@ -1129,7 +1151,7 @@ const SavedRisksPage = () => {
           zIndex: 100,
         }}
       >
-        <button
+        {/* <button
           onClick={async () => {
             if (savedRisks.length === 0) {
               alert("No risks available to generate SoA ❌");
@@ -1235,7 +1257,7 @@ const SavedRisksPage = () => {
           }}
         >
           📄 Generate SoA
-        </button>
+        </button> */}
       </div>
     </div>
   );

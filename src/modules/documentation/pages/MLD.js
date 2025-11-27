@@ -909,7 +909,7 @@ const MLD = () => {
                               Uploading...
                             </>
                           ) : hasUploaded ? (
-                            <Check size={20} />
+                            <Check size={20} style={{ marginRight: "25px",marginLeft: "25px" }}/>
                           ) : (
                             <>
                               <UploadCloud
@@ -941,16 +941,10 @@ const MLD = () => {
                                 style={{
                                   backgroundColor: "#2ecc71",
                                   color: "white",
-                                  borderRadius: "6px",
-                                  padding: "4px 6px",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  width: "32px",
-                                  height: "32px",
+                                  padding:"2px"
                                 }}
                               >
-                                <Check size={20} />
+                                Approved
                               </div>
                             ) : (
                               // Only show Approve button if user is Risk Owner

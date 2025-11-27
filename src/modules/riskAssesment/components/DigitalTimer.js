@@ -35,7 +35,7 @@ const DigitalTimer = () => {
       marginBottom: "20px",
       userSelect: "none",
     }}>
-      <span>As of</span>
+      <span>        </span>
       <span>{formatTime(time)}</span>
     </div>
   );

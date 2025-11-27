@@ -525,7 +525,7 @@ const RiskDetailsForm = ({
         {/* Header */}
         <div style={headerStyle}>
           <h2 style={titleStyle} className="form-title">
-            📋 Risk Assessment
+            Risk Assessment
           </h2>
           <p style={subtitleStyle}>Identify and Assess Risks</p>
         </div>
@@ -534,7 +534,7 @@ const RiskDetailsForm = ({
         <div style={riskIdSectionStyle}>
           <div style={riskIdHeaderStyle} className="risk-id-header">
             <h3 style={{ ...sectionTitleStyle, marginBottom: 0 }}>
-              🆔 Risk Identification
+              Risk Identification
             </h3>
             {!isEditing && (
               <button
@@ -547,7 +547,7 @@ const RiskDetailsForm = ({
                   (e.target.style.backgroundColor = "#3498db")
                 }
               >
-                🔄 Generate New ID
+                Generate New ID
               </button>
             )}
           </div>
@@ -619,14 +619,13 @@ const RiskDetailsForm = ({
               value={formData.location || ""}
               onChange={handleInputChange}
               placeholder="Enter the asset"
-              required
             />
           </div>
         </div>
 
         {/* Threat & Vulnerabilities Section */}
         <div style={sectionStyle}>
-          <h3 style={sectionTitleStyle}>⚠️ Threat & Vulnerabilities</h3>
+          <h3 style={sectionTitleStyle}>Threat & Vulnerabilities</h3>
           <div style={gridStyle} className="risk-grid">
             {/* Threat Dropdown */}
             <div>

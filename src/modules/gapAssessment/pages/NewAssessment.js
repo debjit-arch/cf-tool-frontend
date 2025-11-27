@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { ISO_27001_CLAUSES, ISO_27001_CONTROL } from "../constant";
-import { Upload, X, ClipboardCheck, ShieldCheck,Trash,Eye } from "lucide-react";
+import {
+  Upload,
+  X,
+  ClipboardCheck,
+  ShieldCheck,
+  Trash,
+  Eye,
+} from "lucide-react";
 import gapService from "../services/gapService";
 
 const NewAssessment = () => {
@@ -190,23 +197,99 @@ const NewAssessment = () => {
 
   // Auditor score/remark updates
   const handleAuditorChange = async (i, field, value) => {
-    const r = rows[i];
-    handleInputChange(i, field, value);
-    if (!r.gapId) return;
+    // Step 1: Update state synchronously
+    setRows((prev) => {
+      const updated = [...prev];
+      const row = { ...updated[i], [field]: value };
 
+      const doc = parseInt(row.docScore || 0);
+      const practice = parseInt(row.practiceScore || 0);
+      row.totalScore = doc + practice;
+
+      updated[i] = row;
+      return updated;
+    });
+
+    // Step 2: AFTER state update, work with fresh row safely
+    const row = { ...rows[i], [field]: value };
+    row.totalScore =
+      parseInt(row.docScore || 0) + parseInt(row.practiceScore || 0);
+
+    // Step 3: Create gap entry if needed
+    let gapId = row.gapId;
+    if (!gapId) {
+      try {
+        const created = await gapService.saveEntry({
+          clause: row.clause,
+          question: row.question,
+          standardRequirement: row.standardRequirement,
+          documentURL: row.documentEvidence || "",
+          practiceEvidence: row.practiceEvidence || "",
+          practiceNotes: row.practiceNotes || "",
+          docScore: row.docScore || "",
+          practiceScore: row.practiceScore || "",
+          totalScore: row.totalScore,
+          docRemarks: row.docRemarks || "",
+          practiceRemarks: row.practiceRemarks || "",
+          createdBy: user?.id,
+          department: user?.department?.name || "",
+        });
+
+        gapId = created._id;
+
+        // update gapId in state
+        setRows((prev) => {
+          const updated = [...prev];
+          updated[i].gapId = gapId;
+          return updated;
+        });
+      } catch (err) {
+        console.error("Failed to create gap for auditor:", err);
+        return;
+      }
+    }
+
+    // Step 4: Update existing entry
     try {
-      await gapService.updateEntry(r.gapId, {
-        ...r,
-        [field]: value,
-        totalScore:
-          (field === "docScore" ? parseInt(value) : parseInt(r.docScore || 0)) +
-          (field === "practiceScore"
-            ? parseInt(value)
-            : parseInt(r.practiceScore || 0)),
+      await gapService.updateEntry(gapId, {
+        clause: row.clause,
+        question: row.question,
+        standardRequirement: row.standardRequirement,
+        documentURL: row.documentEvidence || "",
+        practiceEvidence: row.practiceEvidence || "",
+        practiceNotes: row.practiceNotes || "",
+        docScore: row.docScore || "",
+        practiceScore: row.practiceScore || "",
+        totalScore: row.totalScore,
+        docRemarks: row.docRemarks || "",
+        practiceRemarks: row.practiceRemarks || "",
         verifiedBy: user?.id,
       });
     } catch (err) {
-      console.error(err);
+      console.error("Failed to update gap:", err);
+    }
+  };
+
+  const saveAuditorUpdate = async (row) => {
+    if (!row.gapId) return;
+
+    try {
+      await gapService.updateEntry(row.gapId, {
+        clause: row.clause,
+        question: row.question,
+        standardRequirement: row.standardRequirement,
+        documentURL: row.documentEvidence || "",
+        practiceEvidence: row.practiceEvidence || "",
+        practiceNotes: row.practiceNotes || "",
+        docScore: row.docScore || "",
+        practiceScore: row.practiceScore || "",
+        totalScore: row.totalScore,
+        docRemarks: row.docRemarks || "",
+        practiceRemarks: row.practiceRemarks || "",
+        verifiedBy: user?.id,
+      });
+    } catch (err) {
+      console.error("Failed to update gap:", err);
     }
   };
 
@@ -295,7 +378,8 @@ const NewAssessment = () => {
                             onClick={() => setSelectedDoc(row.documentEvidence)}
                             className="text-xs text-blue-600 hover:underline ml-2 mr-1"
                           >
-                            <Eye size={14} className="inline" />View
+                            <Eye size={14} className="inline" />
+                            View
                           </button>
                           <button
                             onClick={() =>
@@ -303,7 +387,8 @@ const NewAssessment = () => {
                             }
                             className="text-xs text-red-500 hover:underline"
                           >
-                            <Trash size={14} className="inline" />Delete
+                            <Trash size={14} className="inline" />
+                            Delete
                           </button>
                         </>
                       )}
@@ -347,7 +432,8 @@ const NewAssessment = () => {
                             onClick={() => setSelectedDoc(row.practiceEvidence)}
                             className="text-xs text-green-600 hover:underline ml-2 mr-1"
                           >
-                            <Eye size={14} className="inline" />View
+                            <Eye size={14} className="inline" />
+                            View
                           </button>
                           <button
                             onClick={() =>
@@ -355,7 +441,8 @@ const NewAssessment = () => {
                             }
                             className="text-xs text-red-500 hover:underline"
                           >
-                            <Trash size={14} className="inline" />Delete
+                            <Trash size={14} className="inline" />
+                            Delete
                           </button>
                         </>
                       )}
@@ -390,9 +477,9 @@ const NewAssessment = () => {
                           className="w-full border"
                         >
                           <option value="">Doc Score</option>
-                          <option value="0-Non Compliant">0</option>
-                          <option value="1-Partial">1</option>
-                          <option value="2-Compliant">2</option>
+                          <option value="0">0-Non Compliant</option>
+                          <option value="1">1-Partial</option>
+                          <option value="2">2-Compliant</option>
                         </select>
                       ) : (
                         <span>{row.docScore || "—"}</span>
@@ -412,10 +499,10 @@ const NewAssessment = () => {
                           }
                           className="w-full border"
                         >
-                          <option value="">Practice Score</option>
-                          <option value="0-Non Compliant">0</option>
-                          <option value="1-Partial">1</option>
-                          <option value="2-Compliant">2</option>
+                          <option value="">Practice Score</option>{" "}
+                          <option value="0">0-Non Compliant</option>
+                          <option value="1">1-Partial</option>
+                          <option value="2">2-Compliant</option>
                         </select>
                       ) : (
                         <span>{row.practiceScore || "—"}</span>
@@ -472,7 +559,7 @@ const NewAssessment = () => {
 
             {/* Clause Score */}
             <div className="text-right pr-4 pt-2 text-sm font-semibold text-gray-700">
-              Clause Score: {clauseScores[clause]}%
+              Section Score: {clauseScores[clause]}%
             </div>
           </div>
         ))}

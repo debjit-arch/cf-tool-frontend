@@ -136,7 +136,7 @@ const TreatmentPlanForm = ({ formData, handleInputChange }) => {
             marginBottom: "6px",
           }}
         >
-          🛡️ Treatment Plan
+          Treatment Plan
         </h2>
         <p style={{ color: "#7f8c8d", fontSize: "14px" }}>
           Define controls and mitigation plan for the identified risk
@@ -214,7 +214,7 @@ const TreatmentPlanForm = ({ formData, handleInputChange }) => {
             marginBottom: "10px",
           }}
         >
-          🔧 Control Implementation
+          Control Implementation
         </h3>
         <p style={{ color: "#7f8c8d", fontSize: "12px", marginBottom: "15px" }}>
           Specify the control measures and additional safeguards to mitigate the

@@ -165,14 +165,42 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
   const handleSave = async () => {
     try {
       const savedRisk = await riskService.saveRisk(formData);
-      showModal(
-        isEditing ? "Eureka Assessment Complete!" : "Edits Saved!",
-        "Click Next for Risk Treatment."
-      );
+
+      const modalData = getModalMessageByStep(currentStep, isEditing);
+      showModal(modalData.title, modalData.message);
+
       if (onSubmit) onSubmit(savedRisk);
     } catch (error) {
       console.error("Error saving draft:", error);
       showModal("❌ Error", "Error saving draft. Please try again.");
+    }
+  };
+
+  const getModalMessageByStep = (step, isEditing = false) => {
+    switch (step) {
+      case 1:
+        return {
+          title: isEditing ? "Step 1 Updated!" : "Step 1 Saved!",
+          message: "Risk details have been saved successfully. Click next for Treatment",
+        };
+
+      case 2:
+        return {
+          title: isEditing ? "Treatment Updated!" : "Treatment Saved!",
+          message: "Risk treatment plan has been saved. Click next for Task Management",
+        };
+
+      case 3:
+        return {
+          title: isEditing ? "Tasks Updated!" : "Tasks Saved!",
+          message: "Tasks for this risk have been saved.",
+        };
+
+      default:
+        return {
+          title: "Saved!",
+          message: "Your progress has been saved.",
+        };
     }
   };
 
@@ -224,9 +252,7 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
                 formData={formData}
                 handleInputChange={handleInputChange}
               />
-              <h4 style={{ marginBottom: "10px", color: "#2c3e50" }}>
-              
-              </h4>
+              <h4 style={{ marginBottom: "10px", color: "#2c3e50" }}></h4>
               <ResidualRiskForm
                 formData={formData}
                 handleInputChange={handleInputChange}
