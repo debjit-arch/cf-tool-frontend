@@ -44,6 +44,7 @@ const NewAssessment = () => {
           documentEvidence: null,
           practiceEvidence: null,
           practiceNotes: "",
+          doceumentNotes: "",
           docScore: "",
           practiceScore: "",
           totalScore: 0,
@@ -79,6 +80,7 @@ const NewAssessment = () => {
                   documentEvidence: gap.documentURL || null,
                   practiceEvidence: gap.practiceEvidence || null,
                   practiceNotes: gap.practiceNotes || "",
+                  documentNotes: gap.documentNotes || "",
                   docScore: gap.docScore || "",
                   practiceScore: gap.practiceScore || "",
                   totalScore:
@@ -136,6 +138,7 @@ const NewAssessment = () => {
         question: newRow.question,
         standardRequirement: newRow.standardRequirement,
         documentURL: newRow.documentEvidence || "",
+        documentNotes: newRow.documentNotes || "",
         practiceEvidence: newRow.practiceEvidence || "",
         practiceNotes: newRow.practiceNotes || "",
         docScore: newRow.docScore || "",
@@ -184,11 +187,16 @@ const NewAssessment = () => {
   };
 
   // Save practice notes on blur
-  const handlePracticeBlur = async (i) => {
+  const handleNotesBlur = async (i) => {
     const r = rows[i];
-    if (!r.practiceNotes) return;
+    if (!r.practiceNotes && !r.documentNotes) return;
+
     try {
-      const saved = await gapService.saveEntry({ ...r, createdBy: user?.id });
+      const saved = await gapService.saveEntry({
+        ...r,
+        createdBy: user?.id,
+      });
+
       handleInputChange(i, "gapId", saved._id);
     } catch (err) {
       console.error(err);
@@ -224,6 +232,7 @@ const NewAssessment = () => {
           question: row.question,
           standardRequirement: row.standardRequirement,
           documentURL: row.documentEvidence || "",
+          documentNotes: row.documentNotes || "",
           practiceEvidence: row.practiceEvidence || "",
           practiceNotes: row.practiceNotes || "",
           docScore: row.docScore || "",
@@ -256,6 +265,7 @@ const NewAssessment = () => {
         question: row.question,
         standardRequirement: row.standardRequirement,
         documentURL: row.documentEvidence || "",
+        documentNotes: row.documentNotes || "",
         practiceEvidence: row.practiceEvidence || "",
         practiceNotes: row.practiceNotes || "",
         docScore: row.docScore || "",
@@ -307,7 +317,8 @@ const NewAssessment = () => {
     );
     const total = answered.reduce((sum, q) => sum + (q.totalScore || 0), 0);
     const maxTotal = answered.length * 4;
-    acc[clause] = maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(2) : "—";
+    acc[clause] =
+      maxTotal > 0 ? ((total / maxTotal) * 100).toFixed(2) : "Yet to Calculate";
     return acc;
   }, {});
 
@@ -320,8 +331,10 @@ const NewAssessment = () => {
 
       <div className="bg-blue-50 p-3 rounded-lg mb-4 text-sm text-gray-700">
         Logged in as: <strong>{user?.name || "Unknown"}</strong> | Role:{" "}
-        <strong className="capitalize">{userRole}</strong> | Department:{" "}
-        <strong>{user?.department?.name || "N/A"}</strong>
+        <strong className="capitalize">
+          {userRole === "risk_owner" ? "Auditor" : "Auditee"}
+        </strong>{" "}
+        | Department: <strong>{user?.department?.name || "N/A"}</strong>
       </div>
 
       <div className="overflow-auto rounded-xl shadow border border-gray-200">
@@ -340,11 +353,15 @@ const NewAssessment = () => {
                   <th className="border px-3 py-2">Question</th>
                   <th className="border px-3 py-2">Document Evidence</th>
                   <th className="border px-3 py-2">Practice Evidence</th>
-                  <th className="border px-3 py-2">Doc Score</th>
-                  <th className="border px-3 py-2">Practice Score</th>
-                  <th className="border px-3 py-2">Total Score</th>
-                  <th className="border px-3 py-2">Doc Remarks</th>
-                  <th className="border px-3 py-2">Practice Remarks</th>
+                  {userRole === "risk_owner" && (
+                    <>
+                      <th className="border px-3 py-2">Doc Score</th>
+                      <th className="border px-3 py-2">Practice Score</th>
+                      <th className="border px-3 py-2">Total Score</th>
+                      <th className="border px-3 py-2">Doc Remarks</th>
+                      <th className="border px-3 py-2">Practice Remarks</th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -356,7 +373,7 @@ const NewAssessment = () => {
 
                     {/* Document Evidence */}
                     <td className="border px-3 py-2">
-                      {userRole !== "auditor" && (
+                      {userRole !== "risk_owner" && (
                         <label className="cursor-pointer text-blue-600 hover:underline text-xs">
                           <Upload size={14} className="inline" />
                           <input
@@ -404,13 +421,13 @@ const NewAssessment = () => {
                             e.target.value
                           )
                         }
-                        onBlur={() => handlePracticeBlur(row.idx)}
+                        onBlur={() => handleNotesBlur(row.idx)}
                       />
                     </td>
 
                     {/* Practice Evidence */}
                     <td className="border px-3 py-2">
-                      {userRole !== "auditor" && (
+                      {userRole !== "risk_owner" && (
                         <label className="cursor-pointer text-green-600 hover:underline text-xs">
                           <Upload size={14} className="inline" />
                           <input
@@ -458,100 +475,104 @@ const NewAssessment = () => {
                             e.target.value
                           )
                         }
-                        onBlur={() => handlePracticeBlur(row.idx)}
+                        onBlur={() => handleNotesBlur(row.idx)}
                       />
                     </td>
 
                     {/* Scores and remarks */}
-                    <td className="border px-3 py-2">
-                      {userRole === "auditor" ? (
-                        <select
-                          value={row.docScore}
-                          onChange={(e) =>
-                            handleAuditorChange(
-                              row.idx,
-                              "docScore",
-                              e.target.value
-                            )
-                          }
-                          className="w-full border"
-                        >
-                          <option value="">Doc Score</option>
-                          <option value="0">0-Non Compliant</option>
-                          <option value="1">1-Partial</option>
-                          <option value="2">2-Compliant</option>
-                        </select>
-                      ) : (
-                        <span>{row.docScore || "—"}</span>
-                      )}
-                    </td>
+                    {userRole === "risk_owner" && (
+                      <>
+                        <td className="border px-3 py-2">
+                          {userRole === "risk_owner" ? (
+                            <select
+                              value={row.docScore}
+                              onChange={(e) =>
+                                handleAuditorChange(
+                                  row.idx,
+                                  "docScore",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full border"
+                            >
+                              <option value="">Doc Score</option>
+                              <option value="0">0-Non Compliant</option>
+                              <option value="1">1-Partial</option>
+                              <option value="2">2-Compliant</option>
+                            </select>
+                          ) : (
+                            <span>{row.docScore || "—"}</span>
+                          )}
+                        </td>
 
-                    <td className="border px-3 py-2">
-                      {userRole === "auditor" ? (
-                        <select
-                          value={row.practiceScore}
-                          onChange={(e) =>
-                            handleAuditorChange(
-                              row.idx,
-                              "practiceScore",
-                              e.target.value
-                            )
-                          }
-                          className="w-full border"
-                        >
-                          <option value="">Practice Score</option>{" "}
-                          <option value="0">0-Non Compliant</option>
-                          <option value="1">1-Partial</option>
-                          <option value="2">2-Compliant</option>
-                        </select>
-                      ) : (
-                        <span>{row.practiceScore || "—"}</span>
-                      )}
-                    </td>
+                        <td className="border px-3 py-2">
+                          {userRole === "risk_owner" ? (
+                            <select
+                              value={row.practiceScore}
+                              onChange={(e) =>
+                                handleAuditorChange(
+                                  row.idx,
+                                  "practiceScore",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full border"
+                            >
+                              <option value="">Practice Score</option>{" "}
+                              <option value="0">0-Non Compliant</option>
+                              <option value="1">1-Partial</option>
+                              <option value="2">2-Compliant</option>
+                            </select>
+                          ) : (
+                            <span>{row.practiceScore || "—"}</span>
+                          )}
+                        </td>
 
-                    <td className="border px-3 py-2 font-semibold text-center">
-                      {row.totalScore}
-                    </td>
+                        <td className="border px-3 py-2 font-semibold text-center">
+                          {row.totalScore}
+                        </td>
 
-                    <td className="border px-3 py-2">
-                      {userRole === "auditor" ? (
-                        <textarea
-                          value={row.docRemarks}
-                          onChange={(e) =>
-                            handleAuditorChange(
-                              row.idx,
-                              "docRemarks",
-                              e.target.value
-                            )
-                          }
-                          className="w-full border"
-                          rows="1"
-                          placeholder="Doc remarks..."
-                        />
-                      ) : (
-                        <span>{row.docRemarks || "—"}</span>
-                      )}
-                    </td>
+                        <td className="border px-3 py-2">
+                          {userRole === "risk_owner" ? (
+                            <textarea
+                              value={row.docRemarks}
+                              onChange={(e) =>
+                                handleAuditorChange(
+                                  row.idx,
+                                  "docRemarks",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full border"
+                              rows="1"
+                              placeholder="Doc remarks..."
+                            />
+                          ) : (
+                            <span>{row.docRemarks || "—"}</span>
+                          )}
+                        </td>
 
-                    <td className="border px-3 py-2">
-                      {userRole === "auditor" ? (
-                        <textarea
-                          value={row.practiceRemarks}
-                          onChange={(e) =>
-                            handleAuditorChange(
-                              row.idx,
-                              "practiceRemarks",
-                              e.target.value
-                            )
-                          }
-                          className="w-full border"
-                          rows="1"
-                          placeholder="Practice remarks..."
-                        />
-                      ) : (
-                        <span>{row.practiceRemarks || "—"}</span>
-                      )}
-                    </td>
+                        <td className="border px-3 py-2">
+                          {userRole === "risk_owner" ? (
+                            <textarea
+                              value={row.practiceRemarks}
+                              onChange={(e) =>
+                                handleAuditorChange(
+                                  row.idx,
+                                  "practiceRemarks",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full border"
+                              rows="1"
+                              placeholder="Practice remarks..."
+                            />
+                          ) : (
+                            <span>{row.practiceRemarks || "—"}</span>
+                          )}
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -559,7 +580,7 @@ const NewAssessment = () => {
 
             {/* Clause Score */}
             <div className="text-right pr-4 pt-2 text-sm font-semibold text-gray-700">
-              Section Score: {clauseScores[clause]}%
+              Section Score: {clauseScores[clause]} %
             </div>
           </div>
         ))}
