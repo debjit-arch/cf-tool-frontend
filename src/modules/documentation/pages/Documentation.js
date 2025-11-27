@@ -195,7 +195,7 @@ const Documentation = () => {
             cursor: "pointer",
           }}
         >
-          Start Tour
+          Tutorial
         </button>
       </div>
 

@@ -473,7 +473,7 @@ const MLD = () => {
         }}
         onClick={() => setJoyrideRun(true)}
       >
-        Start Tour{" "}
+        Tutorial{" "}
       </button>
 
       {/* Back to Dashboard Button */}
