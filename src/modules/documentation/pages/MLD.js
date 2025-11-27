@@ -655,7 +655,7 @@ const MLD = () => {
                     width: "15%",
                   }}
                 >
-                  Dept Name
+                  Doc Owner
                 </th>
                 <th
                   style={{
