@@ -127,7 +127,6 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
       formData.date &&
       formData.riskType &&
       formData.assetType &&
-      formData.location &&
       formData.riskDescription &&
       formData.confidentiality &&
       formData.integrity &&

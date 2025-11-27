@@ -114,7 +114,13 @@ const SavedRisksPage = () => {
       parseInt(risk.availability) || 0
     );
     const probability = parseInt(risk.probability) || 0;
-    const riskScore = impact * probability;
+    let riskScore = impact * probability;
+
+    if ((risk.status || "").toLowerCase() === "closed") {
+      riskScore =
+        parseInt(risk.likelihoodAfterTreatment) *
+        parseInt(risk.impactAfterTreatment);
+    }
 
     if (riskScore <= 3) return "Low";
     if (riskScore <= 8) return "Medium";
@@ -123,12 +129,21 @@ const SavedRisksPage = () => {
   };
 
   const calculateRiskScore = (risk) => {
+    // If the risk is closed, return 0
+    if ((risk.status || "").toLowerCase() === "closed") {
+      return (
+        parseInt(risk.likelihoodAfterTreatment) *
+        parseInt(risk.impactAfterTreatment)
+      );
+    }
+
     const impact = Math.max(
       parseInt(risk.confidentiality) || 0,
       parseInt(risk.integrity) || 0,
       parseInt(risk.availability) || 0
     );
     const probability = parseInt(risk.probability) || 0;
+
     return impact * probability;
   };
 
@@ -172,7 +187,7 @@ const SavedRisksPage = () => {
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays < 0) {
-      return `📅 Task starts in ${Math.abs(diffDays)} day${
+      return ` Task starts in ${Math.abs(diffDays)} day${
         Math.abs(diffDays) !== 1 ? "s" : ""
       }`;
     }
@@ -185,17 +200,17 @@ const SavedRisksPage = () => {
       );
 
       if (remaining >= 0) {
-        return `📅 ${remaining} day${
+        return ` ${remaining} day${
           remaining !== 1 ? "s" : ""
         } left until deadline`;
       } else {
-        return `📅 Deadline missed by ${Math.abs(remaining)} day${
+        return ` Deadline missed by ${Math.abs(remaining)} day${
           Math.abs(remaining) !== 1 ? "s" : ""
         }`;
       }
     }
 
-    return `📅 Started ${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
+    return ` Started ${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
   };
 
   const pageStyle = {
@@ -470,6 +485,18 @@ const SavedRisksPage = () => {
                     fontWeight: "600",
                     fontSize: "15px",
                     border: "2px solid #dee2e6",
+                    color: "#495057",
+                  }}
+                >
+                  Status
+                </th>
+                <th
+                  style={{
+                    padding: "16px 12px",
+                    textAlign: "center",
+                    fontWeight: "600",
+                    fontSize: "15px",
+                    border: "2px solid #dee2e6",
                     background: "#e3f2fd",
                     color: "#495057",
                   }}
@@ -556,7 +583,7 @@ const SavedRisksPage = () => {
                       }}
                     >
                       {/* {risk.date} */}
-                      {risk.date.split('-').reverse().join('-')}
+                      {risk.date.split("-").reverse().join("-")}
                     </td>
                     <td
                       style={{
@@ -580,6 +607,18 @@ const SavedRisksPage = () => {
                       }}
                     >
                       {riskLevel}
+                    </td>
+                    <td
+                      style={{
+                        padding: "12px",
+                        textAlign: "center",
+                        background: riskColors.bgColor,
+                        color: riskColors.color,
+                        fontWeight: "600",
+                        borderRadius: "6px",
+                      }}
+                    >
+                      {risk.status}
                     </td>
                     <td
                       style={{
@@ -757,7 +796,7 @@ const SavedRisksPage = () => {
                     fontWeight: "600",
                   }}
                 >
-                  📋 Risk Information
+                  Risk Information
                 </h4>
                 <div
                   style={{
@@ -778,6 +817,13 @@ const SavedRisksPage = () => {
                   </p>
                   <p>
                     <strong>Asset:</strong> {selectedRisk.location || "—"}
+                  </p>
+                  <p>
+                    <strong>Threat:</strong> {selectedRisk.threat || "—"}
+                  </p>
+                  <p>
+                    <strong>Vulnerability:</strong>{" "}
+                    {selectedRisk.vulnerability || "—"}
                   </p>
                   <p>
                     <strong>Date:</strong>{" "}
@@ -803,7 +849,7 @@ const SavedRisksPage = () => {
                     fontWeight: "600",
                   }}
                 >
-                  📊 Risk Scoring
+                  Risk Scoring
                 </h4>
                 <div
                   style={{
@@ -877,7 +923,7 @@ const SavedRisksPage = () => {
                   fontWeight: "600",
                 }}
               >
-                📝 Description
+                 Description
               </h4>
               <p
                 style={{
@@ -916,7 +962,7 @@ const SavedRisksPage = () => {
                     fontWeight: "600",
                   }}
                 >
-                  🛡️ Treatment Plan
+                   Treatment Plan
                 </h4>
                 <div
                   style={{
@@ -963,7 +1009,7 @@ const SavedRisksPage = () => {
                     fontWeight: "600",
                   }}
                 >
-                  ✅ Residual Risk
+                   Residual Risk
                 </h4>
                 <div
                   style={{
@@ -1033,7 +1079,7 @@ const SavedRisksPage = () => {
                     fontWeight: "600",
                   }}
                 >
-                  🛡️ Controls:{" "}
+                   Controls:{" "}
                   {Array.isArray(selectedRisk.controlReference)
                     ? selectedRisk.controlReference.join(", ")
                     : selectedRisk.controlReference}

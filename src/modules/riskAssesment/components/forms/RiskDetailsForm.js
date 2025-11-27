@@ -1,9 +1,9 @@
-
 import React, { useEffect, useState } from "react";
 import InputField from "../inputs/InputField";
 import SelectField from "../inputs/SelectField";
 import TextAreaField from "../inputs/TextAreaField";
 import Select from "react-select";
+import Joyride, { STATUS } from "react-joyride";
 
 const RiskDetailsForm = ({
   formData,
@@ -14,6 +14,80 @@ const RiskDetailsForm = ({
   originalRiskId = "",
   departments = [],
 }) => {
+  const [runTour, setRunTour] = useState(false);
+  const steps = [
+    {
+      target: ".risk-id-field",
+      content:
+        "This is your Risk ID. You can auto-generate or enter a custom one.",
+      placement: "bottom",
+    },
+    {
+      target: ".department-field",
+      content: "Select the department responsible for this risk.",
+      placement: "bottom",
+    },
+    {
+      target: ".type-select",
+      content:
+        "Choose a Risk Type.Operational are ....,Tactical are ..... or Strategic which are ....... .",
+      placement: "bottom",
+    },
+    {
+      target: ".asset-type-field",
+      content: "Select the classification of the asset.",
+      placement: "bottom",
+    },
+    {
+      target: ".asset-field",
+      content: "Enter the specific asset or location this risk pertains to.",
+      placement: "bottom",
+    },
+    {
+      target: ".threat-select",
+      content:
+        "Choose a threat. You can also enter a custom threat if not listed.",
+      placement: "bottom",
+    },
+    {
+      target: ".vulnerability-select",
+      content: "Pick one or more vulnerabilities associated with this threat.",
+      placement: "bottom",
+    },
+    {
+      target: ".risk-description-field",
+      content:
+        "The risk description is auto-generated based on your threat and vulnerabilities.",
+      placement: "top",
+    },
+    {
+      target: ".likelihood-field",
+      content: "Select the probability level of this risk occurring.",
+      placement: "bottom",
+    },
+    {
+      target: ".impact-score-field",
+      content: "This shows the calculated Impact Score based on CIA values.",
+      placement: "top",
+    },
+    {
+      target: ".risk-score-field",
+      content: "The Risk Score is calculated as Impact × Likelihood.",
+      placement: "top",
+    },
+    {
+      target: ".risk-level-field",
+      content:
+        "The Risk Level is derived from the Risk Score. Low for a score between 1-3, Medium for a score between 4-6 , High score greater than 6).",
+      placement: "top",
+    },
+    {
+      target: ".existing-controls-field",
+      content: "Enter any controls that are already in place for this risk.",
+      placement: "bottom",
+    },
+  ];
+
   // State for Threat & Vulnerabilities
   const [selectedThreat, setSelectedThreat] = useState("");
   const [isCustomThreat, setIsCustomThreat] = useState(false);
@@ -44,8 +118,9 @@ const RiskDetailsForm = ({
   // Collate All Unique Vulnerabilities
   const allVulnerabilities = [
     ...new Set(
-      Object.values(threatVulnerabilityMapping)
-        .flatMap((v) => v.vulnerabilities)
+      Object.values(threatVulnerabilityMapping).flatMap(
+        (v) => v.vulnerabilities
+      )
     ),
   ];
 
@@ -66,10 +141,7 @@ const RiskDetailsForm = ({
       ...allVulnerabilities.map((v) => ({ value: v, label: v })),
       { value: "Others", label: "Others" },
     ];
-  } else if (
-    selectedThreat &&
-    threatVulnerabilityMapping[selectedThreat]
-  ) {
+  } else if (selectedThreat && threatVulnerabilityMapping[selectedThreat]) {
     // Standard threat: only those vulnerabilities for the threat + Others
     vulOptionsArr = [
       ...threatVulnerabilityMapping[selectedThreat].vulnerabilities.map(
@@ -87,9 +159,7 @@ const RiskDetailsForm = ({
     if (items.length === 0) return "";
     if (items.length === 1) return items[0];
     if (items.length === 2) return items.join(" and ");
-    return (
-      items.slice(0, -1).join(", ") + ", and " + items[items.length - 1]
-    );
+    return items.slice(0, -1).join(", ") + ", and " + items[items.length - 1];
   };
 
   // Threat Selection Handler
@@ -199,7 +269,9 @@ const RiskDetailsForm = ({
       // Use formatted list with proper English grammar
       const vulnerabilitiesFormatted = formatListWithAnd(vulArray);
       desc = `Risk of loss of information due to ${threatValue}${
-        vulnerabilitiesFormatted ? " because of " + vulnerabilitiesFormatted : ""
+        vulnerabilitiesFormatted
+          ? " because of " + vulnerabilitiesFormatted
+          : ""
       }`;
       handleInputChange({
         target: { name: "riskDescription", value: desc },
@@ -522,6 +594,31 @@ const RiskDetailsForm = ({
     <>
       <style>{responsiveStyle}</style>
       <div style={formStyle} className="risk-form">
+        <Joyride
+          steps={steps}
+          run={runTour}
+          continuous={true}
+          showSkipButton={true}
+          showProgress={true}
+          styles={{
+            options: {
+              zIndex: 10000,
+            },
+          }}
+          callback={(data) => {
+            const { status } = data;
+            if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+              setRunTour(false);
+            }
+          }}
+        />
+        <button
+          style={{ ...autoGenButtonStyle, marginTop: "10px" }}
+          onClick={() => setRunTour(true)}
+        >
+          Tutorial
+        </button>
+
         {/* Header */}
         <div style={headerStyle}>
           <h2 style={titleStyle} className="form-title">
@@ -562,6 +659,7 @@ const RiskDetailsForm = ({
                 placeholder="Auto-generated or enter custom ID"
                 required
                 readOnly={isEditing}
+                className="risk-id-field"
               />
               {isDuplicateRiskId() && (
                 <div style={duplicateWarningStyle}>
@@ -581,6 +679,7 @@ const RiskDetailsForm = ({
               }))}
               placeholder="Select Department"
               required
+              className="department-field"
             />
 
             <InputField
@@ -601,6 +700,7 @@ const RiskDetailsForm = ({
               options={riskTypeOptions}
               placeholder="Select the type of risk"
               required
+              className="type-select"
             />
 
             <SelectField
@@ -611,6 +711,7 @@ const RiskDetailsForm = ({
               options={assetTypeOptions}
               placeholder="Select asset classification"
               required
+              className="asset-type-field"
             />
 
             <InputField
@@ -619,6 +720,7 @@ const RiskDetailsForm = ({
               value={formData.location || ""}
               onChange={handleInputChange}
               placeholder="Enter the asset"
+              className="asset-field"
             />
           </div>
         </div>
@@ -643,6 +745,7 @@ const RiskDetailsForm = ({
                 placeholder="Select Threat"
                 isClearable
                 styles={selectControlStyle}
+                className="threat-select"
               />
             </div>
 
@@ -677,6 +780,7 @@ const RiskDetailsForm = ({
                 isMulti
                 isClearable
                 styles={selectControlStyle}
+                className="vulnerability-select"
               />
             </div>
 
@@ -703,6 +807,7 @@ const RiskDetailsForm = ({
             placeholder="This will be auto-filled when Threat & Vulnerabilities are selected"
             rows={4}
             required
+            className="risk-description-field"
           />
         </div>
 
@@ -715,11 +820,12 @@ const RiskDetailsForm = ({
           options={likelihoodOptions}
           placeholder="Select probability level"
           required
+          className="likelihood-field"
         />
 
         {/* Calculated Fields */}
         <div style={calculatedFieldsStyle} className="calculated-fields">
-          <div style={calculatedItemStyle}>
+          <div style={calculatedItemStyle} className="impact-score-field">
             <label style={calculatedLabelStyle}>Impact Score</label>
             <span style={calculatedValueStyle}>{calculateImpact() || 0}</span>
           </div>
@@ -731,12 +837,12 @@ const RiskDetailsForm = ({
             </span>
           </div>
 
-          <div style={calculatedItemStyle}>
+          <div style={calculatedItemStyle}className="risk-score-field">
             <label style={calculatedLabelStyle}>Risk Score</label>
             <span style={calculatedValueStyle}>{formData.riskScore || 0}</span>
           </div>
 
-          <div style={calculatedItemStyle}>
+          <div style={calculatedItemStyle} className="risk-level-field">
             <label style={calculatedLabelStyle}>Risk Level</label>
             <span
               style={{
@@ -782,6 +888,7 @@ const RiskDetailsForm = ({
             onChange={handleInputChange}
             placeholder="Controls which are already implemented..."
             rows={3}
+            className="existing-controls-field"
           />
         </div>
 
