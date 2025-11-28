@@ -43,6 +43,7 @@ const SavedRisksPage = () => {
     loadSavedRisks();
   }, []);
 
+  const user = JSON.parse(sessionStorage.getItem("user"));
   const loadSavedRisks = async () => {
     try {
       setLoading(true);
@@ -660,36 +661,38 @@ const SavedRisksPage = () => {
                       >
                         ✏️ Edit
                       </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteRisk(risk.riskId);
-                        }}
-                        style={{
-                          background: "transparent",
-                          color: "#e74c3c",
-                          border: "1px solid #e74c3c",
-                          padding: "8px 16px",
-                          borderRadius: "20px",
-                          fontSize: "12px",
-                          fontWeight: "600",
-                          cursor: "pointer",
-                          transition: "all 0.3s ease",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.background = "#e74c3c";
-                          e.target.style.color = "white";
-                          e.target.style.boxShadow =
-                            "0 4px 12px rgba(231, 76, 60, 0.4)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.background = "transparent";
-                          e.target.style.color = "#e74c3c";
-                          e.target.style.boxShadow = "none";
-                        }}
-                      >
-                        🗑️ Delete
-                      </button>
+                      {user.role !== "risk_identifier" && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteRisk(risk.riskId);
+                          }}
+                          style={{
+                            background: "transparent",
+                            color: "#e74c3c",
+                            border: "1px solid #e74c3c",
+                            padding: "8px 16px",
+                            borderRadius: "20px",
+                            fontSize: "12px",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            transition: "all 0.3s ease",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.background = "#e74c3c";
+                            e.target.style.color = "white";
+                            e.target.style.boxShadow =
+                              "0 4px 12px rgba(231, 76, 60, 0.4)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.background = "transparent";
+                            e.target.style.color = "#e74c3c";
+                            e.target.style.boxShadow = "none";
+                          }}
+                        >
+                          🗑️ Delete
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -923,7 +926,7 @@ const SavedRisksPage = () => {
                   fontWeight: "600",
                 }}
               >
-                 Description
+                Description
               </h4>
               <p
                 style={{
@@ -962,7 +965,7 @@ const SavedRisksPage = () => {
                     fontWeight: "600",
                   }}
                 >
-                   Treatment Plan
+                  Treatment Plan
                 </h4>
                 <div
                   style={{
@@ -1009,7 +1012,7 @@ const SavedRisksPage = () => {
                     fontWeight: "600",
                   }}
                 >
-                   Residual Risk
+                  Residual Risk
                 </h4>
                 <div
                   style={{
@@ -1079,7 +1082,7 @@ const SavedRisksPage = () => {
                     fontWeight: "600",
                   }}
                 >
-                   Controls:{" "}
+                  Controls:{" "}
                   {Array.isArray(selectedRisk.controlReference)
                     ? selectedRisk.controlReference.join(", ")
                     : selectedRisk.controlReference}

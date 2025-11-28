@@ -84,7 +84,7 @@ function App() {
             <RoleBasedRoute
               path="/risk-assessment/saved"
               component={SavedRisksPage}
-              allowedRoles={["risk_owner", "risk_manager", "super_admin"]}
+              allowedRoles={["risk_owner","risk_identifier","risk_manager", "super_admin"]}
             />
             <RoleBasedRoute
               path="/documentation/soa"
