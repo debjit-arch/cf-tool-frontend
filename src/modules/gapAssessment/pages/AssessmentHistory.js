@@ -1,36 +1,20 @@
 import React, { useEffect, useState } from "react";
 import gapService from "../services/gapService";
 import { useHistory } from "react-router-dom";
-import { ArrowLeft, ArrowRight, History as HistoryIcon } from "lucide-react";
+import {
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+} from "recharts";
+import { History as HistoryIcon } from "lucide-react";
 
 const AssessmentHistory = () => {
   const [gaps, setGaps] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const gapsPerPage = 5;
   const history = useHistory();
 
-  const [showButtons, setShowButtons] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > lastScrollY) {
-        // Scrolling down
-        setShowButtons(false);
-      } else {
-        // Scrolling up
-        setShowButtons(true);
-      }
-      setLastScrollY(window.scrollY);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [lastScrollY]);
-
+  /** Fetch gaps */
   useEffect(() => {
     const fetchGaps = async () => {
       try {
@@ -43,237 +27,172 @@ const AssessmentHistory = () => {
     fetchGaps();
   }, []);
 
-  const indexOfLastGap = currentPage * gapsPerPage;
-  const indexOfFirstGap = indexOfLastGap - gapsPerPage;
-  const currentGaps = gaps.slice(indexOfFirstGap, indexOfLastGap);
-  const totalPages = Math.ceil(gaps.length / gapsPerPage);
+  /** Group gaps by clause */
+  const grouped = gaps.reduce((acc, g) => {
+    if (!acc[g.clause]) acc[g.clause] = [];
+    acc[g.clause].push(g);
+    return acc;
+  }, {});
 
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  /** Radar chart data: percentage per clause */
+  // Radar chart data
+  const radarData = Object.keys(grouped).map((clause) => {
+    const arr = grouped[clause];
+    const answered = arr.filter(
+      (q) => q.docScore !== "" || q.practiceScore !== ""
+    );
+    const total = answered.reduce(
+      (sum, x) => sum + Number(x.totalScore || 0),
+      0
+    );
+    const maxTotal = answered.length * 4; // max per question = 2+2
+    const compliance = maxTotal > 0 ? (total / maxTotal) * 100 : 0;
 
-  // Button Styles
-  const backBtnStyle = {
-    position: "fixed",
-    top: "35px",
-    right: "30px",
-    padding: "10px 20px",
-    borderRadius: "6px",
-    backgroundColor: "#005FCC",
-    border: "none",
-    color: "white",
-    fontSize: "1rem",
-    fontWeight: "600",
-    cursor: "pointer",
-    boxShadow: "0 4px 8px rgba(0, 95, 204, 0.3)",
-    transition: "all 0.3s ease",
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "8px",
-    zIndex: 99,
-  };
-
-  const handleBackBtnMouseEnter = (e) => {
-    e.currentTarget.style.backgroundColor = "#0046a3";
-    e.currentTarget.style.boxShadow = "0 6px 12px rgba(0, 70, 163, 0.5)";
-    e.currentTarget.style.transform = "translateY(-2px)";
-  };
-
-  const handleBackBtnMouseLeave = (e) => {
-    e.currentTarget.style.backgroundColor = "#005FCC";
-    e.currentTarget.style.boxShadow = "0 4px 8px rgba(0, 95, 204, 0.3)";
-    e.currentTarget.style.transform = "translateY(0)";
-  };
+    return { clause, compliance, fullMark: 100 };
+  });
 
   return (
-    <div
-      style={{
-        marginTop: 60,
-        padding: 15,
-        maxWidth: 900,
-        margin: "60px auto 0",
-      }}
-    >
-      <button
-        style={{
-          position: "sticky",
-          top: "0",
-          margin: "10px",
-          padding: "10px 24px",
-          borderRadius: "8px",
-          background: "#005FCC",
-          border: "none",
-          color: "#fff",
-          fontWeight: "500",
-          fontSize: "14px",
-          cursor: "pointer",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-          transition: "transform 0.3s ease, opacity 0.3s ease",
-          zIndex: 999,
-          transform: showButtons ? "translateY(0)" : "translateY(-100%)",
-          opacity: showButtons ? 1 : 0,
-        }}
-        onClick={() => history.push("/gap-assessment")}
-      >
+    <div style={container}>
+      {/* Back button */}
+      <button style={backBtn} onClick={() => history.push("/gap-assessment")}>
         ← Back to Dashboard{" "}
       </button>
-
       {/* Header */}
-      <div
-        style={{
-          background: "white",
-          borderRadius: 12,
-          padding: 20,
-          marginBottom: 20,
-          boxShadow: "0 3px 12px rgba(0,0,0,0.06)",
-          border: "1px solid #e9ecef",
-          textAlign: "center",
-        }}
-      >
-        <h1
-          style={{
-            color: "#2c3e50",
-            fontSize: 22,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <HistoryIcon size={22} /> Assessment History
+      <div style={headerBox}>
+        <h1 style={headerTitle}>
+          <HistoryIcon size={22} /> Assessment Result
         </h1>
-        <p style={{ color: "#7f8c8d", fontSize: 14 }}>
+        <p style={subText}>
           View previously reviewed documents and their final statuses.
         </p>
       </div>
+      {/* Radar Chart */}
+      {radarData.length > 0 && (
+        <div style={chartContainer}>
+          <h3 style={{ textAlign: "center", marginBottom: 10 }}>
+            Compliance Overview (Per Clause)
+          </h3>
 
-      {/* Table */}
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          background: "white",
-          borderRadius: 10,
-          overflow: "hidden",
-          boxShadow: "0 3px 12px rgba(0,0,0,0.06)",
-        }}
-      >
-        <thead>
-          <tr>
-            <th style={thStyle}>Sl.No</th>
-            <th style={thStyle}>Document Name</th>
-            <th style={thStyle}>Status</th>
-            <th style={thStyle}>Score</th>
-            <th style={thStyle}>Missing Sections</th>
-          </tr>
-        </thead>
-        <tbody>
-          {currentGaps.length === 0 ? (
-            <tr>
-              <td colSpan={5} style={{ textAlign: "center", padding: 12 }}>
-                No assessment history found
-              </td>
-            </tr>
-          ) : (
-            currentGaps.map((gap, index) => (
-              <tr key={gap.docId}>
-                <td style={tdStyle}>{indexOfFirstGap + index + 1}</td>
-                <td style={tdStyle}>{gap.docName || "Unnamed Document"}</td>
-                <td style={tdStyle}>{gap.status}</td>
-                <td style={tdStyle}>{gap.score ?? "-"}</td>
-                <td style={tdStyle}>
-                  {(gap.missing_sections || []).join(", ") || "-"}
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            marginTop: 20,
-            gap: 8,
-            flexWrap: "wrap",
-          }}
-        >
-          {/* Prev */}
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            style={paginationButtonStyle(currentPage === 1)}
+          <RadarChart
+            cx={300}
+            cy={250}
+            outerRadius={150}
+            width={600}
+            height={450}
+            data={radarData}
           >
-            <ArrowLeft size={16} /> Prev
-          </button>
-
-          {/* Page Numbers */}
-          {[...Array(totalPages).keys()].map((num) => {
-            const pageNum = num + 1;
-            const isActive = pageNum === currentPage;
-            return (
-              <button
-                key={pageNum}
-                onClick={() => paginate(pageNum)}
-                disabled={isActive}
-                style={pageButtonStyle(isActive)}
-              >
-                {pageNum}
-              </button>
-            );
-          })}
-
-          {/* Next */}
-          <button
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-            }
-            disabled={currentPage === totalPages}
-            style={paginationButtonStyle(currentPage === totalPages)}
-          >
-            Next <ArrowRight size={16} />
-          </button>
+            <PolarGrid />
+            <PolarAngleAxis dataKey="clause" />
+            <PolarRadiusAxis angle={30} domain={[0, 100]} />
+            <Radar
+              name="Compliance"
+              dataKey="compliance"
+              stroke="#005FCC"
+              fill="#005FCC"
+              fillOpacity={0.8}
+              dot={true}
+            />
+          </RadarChart>
         </div>
       )}
+      {/* Grouped remarks by clause */}
+      <div style={{ marginTop: 30 }}>
+        {Object.keys(grouped).map((clause) => (
+          <div key={clause} style={clauseBox}>
+            <h2 style={clauseTitle}>{clause}</h2>
+
+            {grouped[clause].map((item) => (
+              <div key={item._id} style={remarkRow}>
+                <p>
+                  <strong>Question:</strong> {item.question}
+                </p>
+                <p>
+                  <strong>Doc Remark:</strong> {item.docRemarks || "-"}
+                </p>
+                <p>
+                  <strong>Practice Remark:</strong>{" "}
+                  {item.practiceRemarks || "-"}
+                </p>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
 
-// Styles
-const thStyle = {
-  padding: 12,
-  borderBottom: "1px solid #e9ecef",
-  background: "#f8f9fa",
+/* --------------------- Styles ---------------------- */
+const container = {
+  margin: "60px auto 0",
+  padding: 15,
+  maxWidth: 900,
 };
-const tdStyle = { padding: 12, borderBottom: "1px solid #e9ecef" };
 
-const paginationButtonStyle = (disabled) => ({
-  padding: "8px 14px",
-  borderRadius: 6,
-  border: "1px solid #0056b3",
-  margin: "0 4px",
-  cursor: disabled ? "not-allowed" : "pointer",
-  fontWeight: 600,
-  backgroundColor: disabled ? "#e9ecef" : "white",
-  color: disabled ? "#6c757d" : "#0056b3",
-  userSelect: "none",
-  display: "inline-flex",
+const backBtn = {
+  position: "sticky",
+  top: 0,
+  margin: "10px",
+  padding: "10px 24px",
+  borderRadius: 8,
+  background: "#005FCC",
+  border: "none",
+  color: "#fff",
+  fontWeight: 500,
+  fontSize: 14,
+  cursor: "pointer",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+  zIndex: 999,
+};
+
+const headerBox = {
+  background: "white",
+  borderRadius: 12,
+  padding: 20,
+  marginBottom: 20,
+  boxShadow: "0 3px 12px rgba(0,0,0,0.06)",
+  border: "1px solid #e9ecef",
+  textAlign: "center",
+};
+
+const headerTitle = {
+  color: "#2c3e50",
+  fontSize: 22,
+  display: "flex",
+  justifyContent: "center",
   alignItems: "center",
-  gap: 6,
-});
+  gap: "8px",
+};
 
-const pageButtonStyle = (isActive) => ({
-  padding: "8px 14px",
-  borderRadius: 6,
-  border: "1px solid #0056b3",
-  margin: "0 4px",
-  cursor: isActive ? "default" : "pointer",
-  fontWeight: 600,
-  backgroundColor: isActive ? "#0056b3" : "white",
-  color: isActive ? "white" : "#0056b3",
-  userSelect: "none",
-});
+const subText = { color: "#7f8c8d", fontSize: 14 };
+
+const chartContainer = {
+  background: "white",
+  borderRadius: 12,
+  padding: 20,
+  boxShadow: "0 3px 12px rgba(0,0,0,0.06)",
+  border: "1px solid #e9ecef",
+  marginBottom: 30,
+};
+
+const clauseBox = {
+  background: "white",
+  padding: 20,
+  borderRadius: 12,
+  marginBottom: 20,
+  border: "1px solid #e9ecef",
+  boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
+};
+
+const clauseTitle = {
+  fontSize: 18,
+  fontWeight: 700,
+  marginBottom: 10,
+};
+
+const remarkRow = {
+  padding: "10px 0",
+  borderBottom: "1px solid #f0f0f0",
+};
 
 export default AssessmentHistory;

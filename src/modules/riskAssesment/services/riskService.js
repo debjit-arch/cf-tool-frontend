@@ -49,14 +49,14 @@ class riskService {
   // --- Save (create or update) risk
   async saveRisk(riskData) {
     try {
-      const response = await fetch(
-        "https://cftoolbackend.duckdns.org/api/risks",
-        {
-          method: "POST", // backend decides insert/update
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(riskData),
-        }
-      );
+      const response = await fetch(this.baseUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...this.getAuthHeader(),
+        },
+        body: JSON.stringify(riskData),
+      });
 
       if (!response.ok) {
         throw new Error(`Failed to save risk: ${response.statusText}`);

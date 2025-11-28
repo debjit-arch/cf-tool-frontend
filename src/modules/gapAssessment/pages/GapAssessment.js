@@ -286,10 +286,10 @@ const GapAssessmentDashboard = ({ refreshTrigger }) => {
           <h3
             style={{ margin: "8px 0 4px", fontSize: "16px", fontWeight: "600" }}
           >
-            Assessment History
+            Assessment Result
           </h3>
           <p style={{ margin: 0, fontSize: "13px", opacity: 0.9 }}>
-            View past gap assessments
+            Compliance Rate per Clause/Control
           </p>
         </div>
       </div>

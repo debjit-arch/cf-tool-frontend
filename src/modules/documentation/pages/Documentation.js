@@ -84,17 +84,17 @@ const Documentation = () => {
     {
       target: "#total-risks",
       content:
-        "This shows the total number of documents need to uploaded by the organization.",
+        "This shows the total number of documents need to be uploaded by your Department.",
     },
     {
       target: "#with-controls",
       content:
-        "This shows the number of documents already uploaded by the organization.",
+        "This shows the number of documents already uploaded by your Department. ",
     },
     {
       target: "#without-controls",
       content:
-        "This shows the number of documents yet to be uploaded by the organization.",
+        "This shows the number of documents yet to be uploaded by your Department.",
     },
     {
       target: "#mld-button",
