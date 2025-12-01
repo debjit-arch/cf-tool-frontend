@@ -460,7 +460,8 @@ const RiskAssessment = () => {
         {(user.role === "risk_owner" ||
           user.role === "risk_manager" ||
           user.role === "risk_identifier" ||
-          user.role === "super_admin") && (
+          user.role === "super_admin"||
+          user.role === "root") && (
           <div
             id="my-risks-card"
             style={actionCardStyle}

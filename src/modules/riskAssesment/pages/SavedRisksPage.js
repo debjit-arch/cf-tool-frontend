@@ -47,7 +47,6 @@ const SavedRisksPage = () => {
   const loadSavedRisks = async () => {
     try {
       setLoading(true);
-      const user = JSON.parse(sessionStorage.getItem("user"));
       if (!user) return;
 
       const risks = await riskService.getAllRisks();
@@ -59,12 +58,26 @@ const SavedRisksPage = () => {
       let filteredRisks;
 
       if (user.role === "super_admin") {
-        // Show all risks for super admins
+        // Root sees everything
         filteredRisks = risks;
+      }
+      else if (user.role === "root") {
+        // Root sees everything
+        const orgName = user.organization || "";
+        filteredRisks = risks.filter((risk) => {
+          return (
+            risk.organization === orgName
+          );
+        });
       } else {
-        // Filter risks by user's department for other roles
         const deptName = user.department?.name || "";
-        filteredRisks = risks.filter((risk) => risk.department === deptName);
+        const orgName = user.department?.organization || "";
+        filteredRisks = risks.filter((risk) => {
+          return (
+            risk.organization === orgName && // org filter
+            risk.department === deptName // department filter
+          );
+        });
       }
 
       setDepartmentName(user.department?.name || "All Departments");

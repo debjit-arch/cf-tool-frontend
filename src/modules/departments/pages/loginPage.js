@@ -43,7 +43,7 @@ const LoginPage = () => {
       if (user && Object.keys(user).length > 0) {
         sessionStorage.setItem("user", JSON.stringify(user));
       }
-
+      console.log(user)
       history.push("/");
     } catch (err) {
       sessionStorage.removeItem("token");

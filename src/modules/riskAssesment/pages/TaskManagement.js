@@ -28,6 +28,7 @@ export default function TaskManagement({ riskFormData = {} }) {
 
   const [formData, setFormData] = useState({
     riskId: riskFormData.riskId || "",
+    organization: user.organization,
     department: "",
     employee: "",
     employeeName: "",
@@ -46,7 +47,15 @@ export default function TaskManagement({ riskFormData = {} }) {
   useEffect(() => {
     let mounted = true;
     getDepartments()
-      .then((d) => mounted && setDepartments(Array.isArray(d) ? d : []))
+      .then(
+        (d) =>
+          mounted &&
+          setDepartments(
+            Array.isArray(d)
+              ? d.filter((dept) => dept.organization === user.organization)
+              : []
+          )
+      )
       .catch(console.error);
     return () => (mounted = false);
   }, []);
@@ -56,7 +65,11 @@ export default function TaskManagement({ riskFormData = {} }) {
       try {
         const res = await getAllUsers();
         if (!mounted) return;
-        setUsers(Array.isArray(res) ? res : []);
+        setUsers(
+          Array.isArray(res)
+            ? res.filter((u) => u.organization === user.organization)
+            : []
+        );
       } catch (err) {
         console.error(err);
         setUsers([]);
@@ -70,7 +83,10 @@ export default function TaskManagement({ riskFormData = {} }) {
     const fetchRisks = async () => {
       try {
         const risksData = await riskService.getAllRisks();
-        const allRisks = Array.isArray(risksData) ? risksData : [];
+        const allRisks = Array.isArray(risksData)
+          ? risksData.filter((r) => r.organization === user.organization)
+          : [];
+
         if (!mounted) return setRisks(allRisks);
         if (!user) return setRiskOptions([]);
         if (user.role === "risk_manager") {
@@ -106,11 +122,13 @@ export default function TaskManagement({ riskFormData = {} }) {
         const fetchedTasks = await taskService.getAllTasks();
         if (!mounted) return;
         setTasks(
-          Array.isArray(fetchedTasks)
-            ? riskFormData.riskId
-              ? fetchedTasks.filter((t) => t.riskId === riskFormData.riskId)
-              : fetchedTasks
-            : []
+          riskFormData.riskId
+            ? fetchedTasks.filter(
+                (t) =>
+                  t.riskId === riskFormData.riskId &&
+                  t.organization === user.organization
+              )
+            : fetchedTasks.filter((t) => t.organization === user.organization)
         );
       } catch (err) {
         console.error(err);
@@ -242,8 +260,12 @@ export default function TaskManagement({ riskFormData = {} }) {
         const allTasks = await taskService.getAllTasks();
         setTasks(
           riskFormData.riskId
-            ? allTasks.filter((t) => t.riskId === riskFormData.riskId)
-            : allTasks
+            ? allTasks.filter(
+                (t) =>
+                  t.riskId === riskFormData.riskId &&
+                  t.organization === user.organization
+              )
+            : allTasks.filter((t) => t.organization === user.organization)
         );
       } catch (err) {
         console.error(err);

@@ -74,14 +74,21 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
     additionalControls: "",
     numberOfDays: "",
     deadlineDate: "",
+    organization: user.organization, // <-- add this
   });
 
   const [existingRiskIds, setExistingRiskIds] = useState([]);
 
   useEffect(() => {
     async function loadRisks() {
-      const allRiskIds = await riskService.getAllRiskIds();
-      setExistingRiskIds(allRiskIds);
+      const allRisks = await riskService.getAllRisks();
+
+      // only get IDs for the user's organization
+      const orgRiskIds = allRisks
+        .filter((risk) => risk.organization === user.department.organization)
+        .map((risk) => risk.riskId);
+
+      setExistingRiskIds(orgRiskIds);
 
       if (isEditing && existingRiskId) {
         const existingRisk = await riskService.getRiskById(existingRiskId);
@@ -89,7 +96,7 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
           setFormData(existingRisk);
         }
       } else if (!formData.riskId) {
-        generateRiskId(allRiskIds);
+        generateRiskId(orgRiskIds);
       }
     }
     loadRisks();
@@ -180,13 +187,15 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
       case 1:
         return {
           title: isEditing ? "Step 1 Updated!" : "Step 1 Saved!",
-          message: "Risk details have been saved successfully. Click next for Treatment",
+          message:
+            "Risk details have been saved successfully. Click next for Treatment",
         };
 
       case 2:
         return {
           title: isEditing ? "Treatment Updated!" : "Treatment Saved!",
-          message: "Risk treatment plan has been saved. Click next for Task Management",
+          message:
+            "Risk treatment plan has been saved. Click next for Task Management",
         };
 
       case 3:
