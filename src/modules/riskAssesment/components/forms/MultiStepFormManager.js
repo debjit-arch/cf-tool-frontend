@@ -31,25 +31,6 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
 
   const [departments, setDepartments] = useState([]);
 
-  useEffect(() => {
-    async function loadDepartments() {
-      try {
-        const token = sessionStorage.getItem("token");
-        const res = await fetch(
-          "https://safesphere.duckdns.org/user-service/api/departments",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        const data = await res.json();
-        setDepartments(data);
-      } catch (err) {
-        console.error("Error fetching departments:", err);
-      }
-    }
-    loadDepartments();
-  }, []);
-
   const user = JSON.parse(sessionStorage.getItem("user"));
   const [tasks, setTasks] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
@@ -76,6 +57,32 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
     deadlineDate: "",
     organization: user.organization, // <-- add this
   });
+
+  useEffect(() => {
+    async function loadDepartments() {
+      try {
+        const token = sessionStorage.getItem("token");
+
+        const res = await fetch(
+          "https://safesphere.duckdns.org/user-service/api/departments",
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        const data = await res.json();
+
+        // Filter departments by user's organization
+        const filtered = Array.isArray(data)
+          ? data.filter((dept) => dept.organization === user?.organization)
+          : [];
+
+        setDepartments(filtered);
+      } catch (err) {
+        console.error("Error fetching departments:", err);
+      }
+    }
+    loadDepartments();
+  }, []);
 
   const [existingRiskIds, setExistingRiskIds] = useState([]);
 
