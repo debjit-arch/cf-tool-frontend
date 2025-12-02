@@ -60,14 +60,11 @@ const SavedRisksPage = () => {
       if (user.role === "super_admin") {
         // Root sees everything
         filteredRisks = risks;
-      }
-      else if (user.role === "root") {
+      } else if (user.role === "root") {
         // Root sees everything
         const orgName = user.organization || "";
         filteredRisks = risks.filter((risk) => {
-          return (
-            risk.organization === orgName
-          );
+          return risk.organization === orgName;
         });
       } else {
         const deptName = user.department?.name || "";
@@ -1213,113 +1210,124 @@ const SavedRisksPage = () => {
           zIndex: 100,
         }}
       >
-        {/* <button
-          onClick={async () => {
-            if (savedRisks.length === 0) {
-              alert("No risks available to generate SoA ❌");
-              return;
-            }
-
-            try {
-              for (const risk of savedRisks) {
-                if (risk.controlReference) {
-                  let controlRefs = [];
-                  if (Array.isArray(risk.controlReference)) {
-                    controlRefs = risk.controlReference;
-                  } else if (typeof risk.controlReference === "string") {
-                    controlRefs = risk.controlReference
-                      .split(",")
-                      .map((ref) => ref.trim())
-                      .filter((ref) => ref.length > 0);
-                  }
-
-                  const existingControls =
-                    await documentationService.getControls();
-                  const existingCategories = new Set(
-                    existingControls.map((c) => c.category)
-                  );
-
-                  controlRefs = [...new Set(controlRefs)].sort(compareControls);
-
-                  for (const ref of controlRefs) {
-                    if (existingCategories.has(ref)) {
-                      console.log(`⚠️ Control ${ref} already exists, skipping`);
-                      continue;
+        {
+          <button
+            onClick={async () => {
+              if (savedRisks.length === 0) {
+                alert("No risks available to generate SoA ❌");
+                return;
+              }
+              try {
+                const user = JSON.parse(sessionStorage.getItem("user"));
+                for (const risk of savedRisks) {
+                  if (risk.controlReference) {
+                    let controlRefs = [];
+                    if (Array.isArray(risk.controlReference)) {
+                      controlRefs = risk.controlReference;
+                    } else if (typeof risk.controlReference === "string") {
+                      controlRefs = risk.controlReference
+                        .split(",")
+                        .map((ref) => ref.trim())
+                        .filter((ref) => ref.length > 0);
                     }
 
-                    const description =
-                      CONTROL_MAPPING[ref] || "No description available";
+                    const existingControls =
+                      await documentationService.getControls();
+                    const existingCategories = new Set(
+                      existingControls.map((c) => c.category)
+                    );
 
-                    const addedControl = await documentationService.addControl({
-                      category: ref,
-                      description,
-                    });
+                    controlRefs = [...new Set(controlRefs)].sort(
+                      compareControls
+                    );
 
-                    const mapEntry = DOCUMENT_MAPPING[ref] || {};
-                    const docRefs = mapEntry.docs || ["N/A"];
-                    const type = mapEntry.type || "N/A";
-                    const dept = mapEntry.dept || "N/A";
+                    for (const ref of controlRefs) {
+                      const controlExistsForOrg = existingControls.some(
+                        (c) =>
+                          c.category === ref &&
+                          c.organization === user.organization
+                      );
+                      if (controlExistsForOrg) {
+                        console.log(
+                          `⚠️ Control ${ref} already exists for org, skipping`
+                        );
+                        continue;
+                      }
 
-                    for (const doc of docRefs) {
-                      await documentationService.addSoAEntry({
-                        controlId: addedControl.id,
-                        category: addedControl.category,
-                        description: addedControl.description,
-                        status: "Planned",
-                        documentRef: [doc],
-                        type,
-                        dept,
-                        createdAt: new Date().toISOString(),
-                      });
+                      const description =
+                        CONTROL_MAPPING[ref] || "No description available";
+                      const addedControl =
+                        await documentationService.addControl({
+                          category: ref,
+                          description,
+                          organization: user.organization,
+                        });
+
+                      const mapEntry = DOCUMENT_MAPPING[ref] || {};
+                      const docRefs = mapEntry.docs || ["N/A"];
+                      const type = mapEntry.type || "N/A";
+                      const dept = mapEntry.dept || "N/A";
+                      for (const doc of docRefs) {
+                        await documentationService.addSoAEntry({
+                          controlId: addedControl.id,
+                          category: addedControl.category,
+                          description: addedControl.description,
+                          status: "Planned",
+                          documentRef: [doc],
+                          type,
+                          dept,
+                          createdAt: new Date().toISOString(),
+                          organization: addedControl.organization,
+                        });
+                      }
                     }
                   }
                 }
-              }
 
-              // Role-based redirect
-              const user = JSON.parse(sessionStorage.getItem("user"));
-              const role = user?.role || "";
-              if (role === "super_admin") {
-                setRedirectMessage(" Redirecting to Soa Page.");
-                history.push("/documentation/soa");
-              } else {
-                setRedirectMessage(
-                  "⚠️ You do not have permission to access SoA. Redirecting to master list of documents..."
-                );
-                setTimeout(() => {
-                  setRedirectMessage(""); // Clear after redirect
-                  history.push("/documentation/mld");
-                }, 2000);
+                // Role-based redirect
+                const role = user?.role || "";
+                if (role === "super_admin") {
+                  setRedirectMessage(" Redirecting to Soa Page.");
+                  history.push("/documentation/soa");
+                } else {
+                  setRedirectMessage(
+                    "⚠️ You do not have permission to access SoA. Redirecting to master list of documents..."
+                  );
+                  setTimeout(() => {
+                    setRedirectMessage(""); // Clear after redirect
+                    history.push("/documentation/mld");
+                  }, 2000);
+                }
+              } catch (error) {
+                console.error("Error generating SoA:", error);
+                alert("⚠️ Failed to generate SoA. Check console.");
               }
-            } catch (error) {
-              console.error("Error generating SoA:", error);
-              alert("⚠️ Failed to generate SoA. Check console.");
-            }
-          }}
-          style={{
-            padding: "12px 25px",
-            borderRadius: "50px",
-            background: "linear-gradient(45deg, #8e44ad, #9b59b6)",
-            color: "white",
-            border: "none",
-            fontSize: "16px",
-            fontWeight: "600",
-            cursor: "pointer",
-            boxShadow: "0 4px 15px rgba(155, 89, 182, 0.3)",
-            transition: "all 0.3s ease",
-          }}
-          title="Generate Statement of Applicability"
-          onMouseEnter={(e) => {
-            e.target.style.transform = "scale(1.05)";
-            e.target.style.boxShadow = "0 6px 20px rgba(155, 89, 182, 0.4)";
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = "scale(1)";
-            e.target.style.boxShadow = "0 4px 15px rgba(155, 89, 182, 0.3)";
-          }}
-        >
-          📄 Generate SoA
-        </button> */}
+            }}
+            style={{
+              padding: "12px 25px",
+              borderRadius: "50px",
+              background: "linear-gradient(45deg, #8e44ad, #9b59b6)",
+              color: "white",
+              border: "none",
+              fontSize: "16px",
+              fontWeight: "600",
+              cursor: "pointer",
+              boxShadow: "0 4px 15px rgba(155, 89, 182, 0.3)",
+              transition: "all 0.3s ease",
+            }}
+            title="Generate Statement of Applicability"
+            onMouseEnter={(e) => {
+              e.target.style.transform = "scale(1.05)";
+              e.target.style.boxShadow = "0 6px 20px rgba(155, 89, 182, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = "scale(1)";
+              e.target.style.boxShadow = "0 4px 15px rgba(155, 89, 182, 0.3)";
+            }}
+          >
+            📄 Generate SoA
+          </button>
+        }
       </div>
     </div>
   );

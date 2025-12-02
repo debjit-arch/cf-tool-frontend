@@ -30,7 +30,6 @@ async function request(url, options = {}) {
   return res.text();
 }
 
-
 const documentationService = {
   // =========================================================
   //                      S O A   (Spring Boot)
@@ -130,6 +129,7 @@ const documentationService = {
     controlId,
     uploaderName,
     departmentName,
+    organization,
   }) {
     if (!file) throw new Error("File is required");
 
@@ -140,7 +140,7 @@ const documentationService = {
     if (controlId) formData.append("controlId", controlId);
     if (uploaderName) formData.append("uploaderName", uploaderName);
     if (departmentName) formData.append("departmentName", departmentName);
-
+    if (organization) formData.append("organization", organization);
     const res = await axios.post(`${API_DOCS}/documents/upload`, formData, {
       headers: {
         // DO NOT set Content-Type for FormData

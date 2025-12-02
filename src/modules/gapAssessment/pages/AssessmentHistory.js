@@ -18,8 +18,15 @@ const AssessmentHistory = () => {
   useEffect(() => {
     const fetchGaps = async () => {
       try {
+        const user = JSON.parse(sessionStorage.getItem("user"));
         const data = await gapService.getGaps();
-        setGaps(data || []);
+
+        // 🔥 Filter only gaps belonging to the logged in user's org
+        const filtered = data.filter(
+          (g) => g.organization === user.organization
+        );
+
+        setGaps(filtered || []);
       } catch (err) {
         console.error(err);
       }
@@ -28,6 +35,7 @@ const AssessmentHistory = () => {
   }, []);
 
   /** Group gaps by clause */
+
   const grouped = gaps.reduce((acc, g) => {
     if (!acc[g.clause]) acc[g.clause] = [];
     acc[g.clause].push(g);
@@ -36,6 +44,8 @@ const AssessmentHistory = () => {
 
   /** Radar chart data: percentage per clause */
   // Radar chart data
+  const extractClauseNumber = (clause) => clause.split(" ")[0];
+
   const radarData = Object.keys(grouped).map((clause) => {
     const arr = grouped[clause];
     const answered = arr.filter(
@@ -45,10 +55,14 @@ const AssessmentHistory = () => {
       (sum, x) => sum + Number(x.totalScore || 0),
       0
     );
-    const maxTotal = answered.length * 4; // max per question = 2+2
+    const maxTotal = answered.length * 4;
     const compliance = maxTotal > 0 ? (total / maxTotal) * 100 : 0;
 
-    return { clause, compliance, fullMark: 100 };
+    return {
+      clause: extractClauseNumber(clause), // <-- FIXED
+      compliance,
+      fullMark: 100,
+    };
   });
 
   return (
@@ -74,22 +88,48 @@ const AssessmentHistory = () => {
           </h3>
 
           <RadarChart
-            cx={300}
-            cy={250}
+            cx={390}
+            cy={210}
             outerRadius={150}
             width={600}
             height={450}
             data={radarData}
           >
-            <PolarGrid />
-            <PolarAngleAxis dataKey="clause" />
-            <PolarRadiusAxis angle={30} domain={[0, 100]} />
+            {/* Spider-web style grid */}
+            <PolarGrid
+              gridType="polygon"
+              radialLines={true}
+              stroke="#555" // darker grid lines
+              strokeWidth={1.2}
+            />
+
+            {/* Clause labels */}
+            <PolarAngleAxis
+              dataKey="clause"
+              tick={{ fontSize: 12, fill: "#333" }}
+            />
+
+            {/* Circular levels / rings */}
+            <PolarRadiusAxis
+              angle={90}
+              domain={[0, 100]}
+              tickCount={6} // creates spider-web rings
+              axisLine={false} // cleaner style
+              tick={{
+                fill: "#222", // darker label text
+                fontSize: 7,
+                fontWeight: "bold",
+              }}
+              stroke="#444"
+            />
+
+            {/* Actual radar shape */}
             <Radar
               name="Compliance"
               dataKey="compliance"
               stroke="#005FCC"
               fill="#005FCC"
-              fillOpacity={0.8}
+              fillOpacity={0.6}
               dot={true}
             />
           </RadarChart>

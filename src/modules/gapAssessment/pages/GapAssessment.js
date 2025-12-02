@@ -39,18 +39,22 @@ const GapAssessmentDashboard = ({ refreshTrigger }) => {
     },
   ];
 
-  useEffect(() => {
-    loadGapStats();
-  }, [refreshTrigger]);
-
   const loadGapStats = async () => {
     try {
+      const user = JSON.parse(sessionStorage.getItem("user")); // get logged in user
       const gaps = await gapService.getGaps();
-      const closed = gaps.filter((g) => g.status === "Closed").length;
-      const open = gaps.length - closed;
+
+      // 🔥 Filter gaps belonging ONLY to user's organization
+      const filtered = gaps.filter((g) => g.organization === user.organization);
+
+      const closed = filtered.filter(
+        (g) => g.docScore !== "" || g.practiceScore !== ""
+      ).length;
+
+      const open = filtered.length - closed;
 
       setGapStats({
-        total: gaps.length,
+        total: filtered.length,
         closed,
         open,
       });
@@ -58,6 +62,10 @@ const GapAssessmentDashboard = ({ refreshTrigger }) => {
       console.error("Error loading gap stats:", error);
     }
   };
+
+  useEffect(() => {
+    loadGapStats();
+  }, [refreshTrigger]);
 
   // 🔹 Styles
   const pageStyle = {
@@ -185,7 +193,7 @@ const GapAssessmentDashboard = ({ refreshTrigger }) => {
               fontWeight: "600",
             }}
           >
-            Total Gaps
+            Total Answerd Questions
           </p>
         </div>
 
@@ -211,7 +219,7 @@ const GapAssessmentDashboard = ({ refreshTrigger }) => {
               fontWeight: "600",
             }}
           >
-            Closed Gaps
+            Questions Assessed
           </p>
         </div>
 
@@ -237,7 +245,7 @@ const GapAssessmentDashboard = ({ refreshTrigger }) => {
               fontWeight: "600",
             }}
           >
-            Open Gaps
+            Questions Left to Assess
           </p>
         </div>
       </div>
@@ -258,7 +266,6 @@ const GapAssessmentDashboard = ({ refreshTrigger }) => {
             (e.currentTarget.style.transform = "translateY(0)")
           }
         >
-          
           <h3
             style={{ margin: "8px 0 4px", fontSize: "16px", fontWeight: "600" }}
           >

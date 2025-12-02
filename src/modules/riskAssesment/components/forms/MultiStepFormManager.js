@@ -55,6 +55,7 @@ const MultiStepFormManager = ({ onSubmit, focusArea = "risk" }) => {
     additionalControls: "",
     numberOfDays: "",
     deadlineDate: "",
+    status:"Open",
     organization: user.organization, // <-- add this
   });
 

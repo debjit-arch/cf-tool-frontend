@@ -22,20 +22,22 @@ const Documentation = () => {
         const soas = (await documentationService.getSoAEntries()) || [];
         const docs = (await documentationService.getDocuments()) || [];
 
-        const total = Array.isArray(soas) ? soas.length : 0;
+        // Filter by user's organization
+        const orgSoas = soas.filter(
+          (s) => s.organization === user.organization
+        );
+        const orgDocs = docs.filter(
+          (d) => d.organization === user.organization
+        );
 
         // Count uploaded documents per SoA
-        const uploadedCount = Array.isArray(docs) ? docs.length : 0;
-        // Filter & sort as in your MLD logic
-        let filteredAndSortedSoas = [...soas];
+        const total = orgSoas.length;
+        let filteredAndSortedSoas = [...orgSoas];
 
-        // optional: if you want search/sort here, add conditions similar to your MLD useMemo
-
-        // Get department-specific uploaded docs
         const { docCount, userDocs } = getDocsForUser(
           filteredAndSortedSoas,
           user,
-          docs
+          orgDocs
         );
 
         setDocumentStats({
@@ -52,30 +54,37 @@ const Documentation = () => {
     loadDocumentStats();
   }, [user]);
 
-  const getDocsForUser = (soas, user, docs) => {
+  const getDocsForUser = (soas, user, documents) => {
     const docsSet = new Set();
     let docCount = 0;
-    docs.forEach((doc) => {
+    documents.forEach((doc) => {
       soas.forEach((soa) => {
-        if(doc.soaId === soa.id.toString() && user.department.name === doc.departmentName)
-          docCount=docCount+1;
-        const refs = Array.isArray(soa.documentRef)
-          ? soa.documentRef
-          : [soa.documentRef];
-        refs.forEach((ref) => {
-          for (const key in DOCUMENT_MAPPING) {
-            if (
-              DOCUMENT_MAPPING[key].docs?.includes(ref) &&
-              DOCUMENT_MAPPING[key].dept.some((d) =>
-                user.department.name.includes(d)
-              )
-            ) {
-              docsSet.add(ref);
-            }
-          }
-        });
+        if (
+          doc.soaId === soa.id.toString() &&
+          user.department.name === doc.departmentName
+        )
+          docCount++;
       });
     });
+    soas.forEach((soa) => {
+      const refs = Array.isArray(soa.documentRef)
+        ? soa.documentRef
+        : [soa.documentRef];
+
+      refs.forEach((ref) => {
+        for (const key in DOCUMENT_MAPPING) {
+          if (
+            DOCUMENT_MAPPING[key].docs?.includes(ref) &&
+            DOCUMENT_MAPPING[key].dept.some((d) =>
+              user.department.name.includes(d)
+            )
+          ) {
+            docsSet.add(ref);
+          }
+        }
+      });
+    });
+
     return { docCount, userDocs: Array.from(docsSet) };
   };
   // User and role loaded once
@@ -356,10 +365,10 @@ const Documentation = () => {
             (e.currentTarget.style.transform = "translateY(0)")
           }
         >
-          <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>List of Documents</h3>
-          <p style={{ margin: 0, fontSize: "13px", opacity: 0.9 }}>
-            
-          </p>
+          <h3 style={{ margin: "0 0 6px 0", fontSize: "16px" }}>
+            List of Documents
+          </h3>
+          <p style={{ margin: 0, fontSize: "13px", opacity: 0.9 }}></p>
         </div>
       </div>
     </div>

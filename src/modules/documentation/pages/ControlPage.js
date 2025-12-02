@@ -9,6 +9,7 @@ const ControlsPage = () => {
   const [newControl, setNewControl] = useState({
     category: "",
     description: "",
+    organization: "",
   });
   const [currentPage, setCurrentPage] = useState(1);
   const controlsPerPage = 10;
@@ -42,7 +43,12 @@ const ControlsPage = () => {
   const loadControls = async () => {
     try {
       const data = await documentationService.getControls();
-      setControls(data);
+      const user = JSON.parse(sessionStorage.getItem("user")); // fix
+      // filter controls by organization
+      const orgControls = data.filter(
+        (control) => control.organization === user?.organization
+      );
+      setControls(orgControls);
     } catch (error) {
       console.error("Error loading controls:", error);
     }
@@ -51,15 +57,16 @@ const ControlsPage = () => {
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!newControl.category || !newControl.description) return;
-
+    const user = JSON.parse(sessionStorage.getItem(user));
     try {
       const addedControl = await documentationService.addControl({
         category: newControl.category,
         description: newControl.description,
+        organization: user.organization,
       });
 
       // Automatically create SoA entry
-      const docRefs = DOCUMENT_MAPPING[newControl.category] || ["N/A"];
+      const docRefs = DOCUMENT_MAPPING[newControl.category]?.docs || ["N/A"];
 
       for (const doc of docRefs) {
         await documentationService.addSoAEntry({
@@ -67,8 +74,9 @@ const ControlsPage = () => {
           category: addedControl.category,
           description: addedControl.description,
           status: "Planned",
-          documentRef: [doc], // save single document per entry
+          documentRef: [doc],
           createdAt: new Date().toISOString(),
+          organization: addedControl.organization, // ✅ pass org
         });
       }
 

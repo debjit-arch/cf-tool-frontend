@@ -46,21 +46,27 @@ const SoaPage = () => {
       try {
         const storedControls = await documentationService.getControls();
         const soaEntries = await documentationService.getSoAEntries();
+        const user = JSON.parse(sessionStorage.getItem("user")); // fix
 
-        const controlsWithRefs = storedControls.map((control) => {
-          // get all SoA entries for this control
+        // Filter controls by organization
+        const orgControls = storedControls.filter(
+          (control) => control.organization === user?.organization
+        );
+
+        const controlsWithRefs = orgControls.map((control) => {
           const soaEntriesForControl = soaEntries.filter(
-            (e) => e.controlId === control.id
+            (e) =>
+              e.controlId === control.id &&
+              e.organization === user?.organization // also filter SoA by org
           );
 
-          // flatten all documentRefs from all entries
           const documentRefs = soaEntriesForControl.flatMap(
             (e) => e.documentRef
           );
 
           return {
             ...control,
-            status: soaEntriesForControl[0]?.status || "Planned", // or handle multiple statuses
+            status: soaEntriesForControl[0]?.status || "Planned",
             justification:
               soaEntriesForControl[0]?.justification || "Risk Identified",
             documentRef: documentRefs.length > 0 ? documentRefs : ["N/A"],
@@ -98,6 +104,7 @@ const SoaPage = () => {
 
       const existingEntries = await documentationService.getSoAEntries();
       const existingEntry = existingEntries.find((e) => e.controlId === id);
+      const user = JSON.parse(sessionStorage.getItem(user));
 
       if (existingEntry) {
         for (const doc of control.documentRef) {
@@ -111,6 +118,7 @@ const SoaPage = () => {
               documentRef: [doc],
               justification: control.justification,
               updatedAt: new Date().toISOString(),
+              organization: user.organization,
             });
           } else {
             await documentationService.addSoAEntry({
@@ -121,6 +129,7 @@ const SoaPage = () => {
               documentRef: [doc],
               justification: control.justification,
               createdAt: new Date().toISOString(),
+              organization: user.organization, // or get from user context / dropdown
             });
           }
         }
@@ -142,14 +151,33 @@ const SoaPage = () => {
 
       const existingEntries = await documentationService.getSoAEntries();
       const existingEntry = existingEntries.find((e) => e.controlId === id);
-
+      const user = JSON.parse(sessionStorage.getItem(user));
       if (existingEntry) {
-        await documentationService.updateSoAEntry(existingEntry.id, {
-          status: control.status,
-          documentRef: control.documentRef,
-          justification: newJustification,
-          updatedAt: new Date().toISOString(),
-        });
+        for (const doc of control.documentRef) {
+          const existingEntryForDoc = existingEntries.find(
+            (e) => e.controlId === control.id && e.documentRef[0] === doc
+          );
+          if (existingEntryForDoc) {
+            await documentationService.updateSoAEntry(existingEntryForDoc.id, {
+              status: control.status,
+              documentRef: control.documentRef,
+              justification: newJustification,
+              updatedAt: new Date().toISOString(),
+              organization: user.organization,
+            });
+          } else {
+            await documentationService.addSoAEntry({
+              controlId: control.id,
+              category: control.category,
+              description: control.description,
+              status: control.status,
+              documentRef: [doc],
+              justification: control.justification,
+              createdAt: new Date().toISOString(),
+              organization: user.organization, // or get from user context / dropdown
+            });
+          }
+        }
       }
     } catch (error) {
       console.error("Error updating justification:", error);

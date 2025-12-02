@@ -20,6 +20,7 @@ const RiskTemplateTable = () => {
   const [showButtons, setShowButtons] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
+  const user = JSON.parse(sessionStorage.getItem("user"))
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > lastScrollY) {
@@ -161,7 +162,8 @@ const RiskTemplateTable = () => {
           : [risk.vulnerability].filter(Boolean),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        status: "Active",
+        status: "Open",
+        organization:user.organization
       };
 
       await riskService.saveRisk(newRisk);

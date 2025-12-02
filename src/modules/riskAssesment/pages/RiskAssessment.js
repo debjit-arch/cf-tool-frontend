@@ -100,6 +100,7 @@ const RiskAssessment = () => {
 
       const departmentRisks = risks.filter(
         (risk) =>
+          risk.organization === user.organization && // NEW LINE ⭐
           risk.department &&
           user.department?.name &&
           risk.department.trim().toLowerCase() ===
@@ -460,7 +461,7 @@ const RiskAssessment = () => {
         {(user.role === "risk_owner" ||
           user.role === "risk_manager" ||
           user.role === "risk_identifier" ||
-          user.role === "super_admin"||
+          user.role === "super_admin" ||
           user.role === "root") && (
           <div
             id="my-risks-card"

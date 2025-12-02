@@ -22,7 +22,7 @@ const NewAssessment = () => {
     if (rawUser) {
       const parsedUser = JSON.parse(rawUser);
       setUser(parsedUser);
-      setUserRole(parsedUser.role || "employee");
+      setUserRole(parsedUser.isAuditor || false);
     }
   }, []);
 
@@ -69,9 +69,14 @@ const NewAssessment = () => {
     const fetchGaps = async () => {
       try {
         const gaps = await gapService.getGaps();
+        // Only keep gaps from the user's organization
+        const filteredGaps = gaps.filter(
+          (g) => g.organization === user.organization
+        );
+
         setRows((prev) =>
           prev.map((row) => {
-            const gap = gaps.find(
+            const gap = filteredGaps.find(
               (g) => g.clause === row.clause && g.question === row.question
             );
             return gap
@@ -148,6 +153,7 @@ const NewAssessment = () => {
         practiceRemarks: newRow.practiceRemarks || "",
         createdBy: user?.id || "",
         department: user?.department?.name || "",
+        organization: user?.organization || "",
       };
 
       const saved = await gapService.saveEntry(payload);
@@ -195,6 +201,7 @@ const NewAssessment = () => {
       const saved = await gapService.saveEntry({
         ...r,
         createdBy: user?.id,
+        organization: user?.organization || "",
       });
 
       handleInputChange(i, "gapId", saved._id);
@@ -242,6 +249,7 @@ const NewAssessment = () => {
           practiceRemarks: row.practiceRemarks || "",
           createdBy: user?.id,
           department: user?.department?.name || "",
+          organization: user?.organization || "",
         });
 
         gapId = created._id;
@@ -332,7 +340,7 @@ const NewAssessment = () => {
       <div className="bg-blue-50 p-3 rounded-lg mb-4 text-sm text-gray-700">
         Logged in as: <strong>{user?.name || "Unknown"}</strong> | Role:{" "}
         <strong className="capitalize">
-          {userRole === "risk_owner" ? "Auditor" : "Auditee"}
+          {userRole ? "Auditor" : "Assessor"}
         </strong>{" "}
         | Department: <strong>{user?.department?.name || "N/A"}</strong>
       </div>
@@ -353,7 +361,7 @@ const NewAssessment = () => {
                   <th className="border px-3 py-2">Question</th>
                   <th className="border px-3 py-2">Document Evidence</th>
                   <th className="border px-3 py-2">Practice Evidence</th>
-                  {userRole === "risk_owner" && (
+                  {userRole && (
                     <>
                       <th className="border px-3 py-2">Doc Score</th>
                       <th className="border px-3 py-2">Practice Score</th>
@@ -373,7 +381,7 @@ const NewAssessment = () => {
 
                     {/* Document Evidence */}
                     <td className="border px-3 py-2">
-                      {userRole !== "risk_owner" && (
+                      {!userRole && (
                         <label className="cursor-pointer text-blue-600 hover:underline text-xs">
                           <Upload size={14} className="inline" />
                           <input
@@ -427,7 +435,7 @@ const NewAssessment = () => {
 
                     {/* Practice Evidence */}
                     <td className="border px-3 py-2">
-                      {userRole !== "risk_owner" && (
+                      {!userRole  && (
                         <label className="cursor-pointer text-green-600 hover:underline text-xs">
                           <Upload size={14} className="inline" />
                           <input
@@ -480,10 +488,10 @@ const NewAssessment = () => {
                     </td>
 
                     {/* Scores and remarks */}
-                    {userRole === "risk_owner" && (
+                    {userRole && (
                       <>
                         <td className="border px-3 py-2">
-                          {userRole === "risk_owner" ? (
+                          {userRole ? (
                             <select
                               value={row.docScore}
                               onChange={(e) =>
@@ -506,7 +514,7 @@ const NewAssessment = () => {
                         </td>
 
                         <td className="border px-3 py-2">
-                          {userRole === "risk_owner" ? (
+                          {userRole ? (
                             <select
                               value={row.practiceScore}
                               onChange={(e) =>
@@ -533,7 +541,7 @@ const NewAssessment = () => {
                         </td>
 
                         <td className="border px-3 py-2">
-                          {userRole === "risk_owner" ? (
+                          {userRole ? (
                             <textarea
                               value={row.docRemarks}
                               onChange={(e) =>
@@ -553,7 +561,7 @@ const NewAssessment = () => {
                         </td>
 
                         <td className="border px-3 py-2">
-                          {userRole === "risk_owner" ? (
+                          {userRole  ? (
                             <textarea
                               value={row.practiceRemarks}
                               onChange={(e) =>

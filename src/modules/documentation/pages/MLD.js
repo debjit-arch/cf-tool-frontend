@@ -102,20 +102,30 @@ const MLD = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const user = JSON.parse(sessionStorage.getItem("user"));
+
+        // Fetch all documents and filter by organization
         const docs = (await documentationService.getDocuments()) || [];
-        setDocuments(docs || []);
-        console.log("📄 Documents fetched from API:", docs);
+        const orgDocs = docs.filter(
+          (d) => d.organization === user?.organization
+        );
+        setDocuments(orgDocs);
+        console.log("📄 Documents fetched from API (org filtered):", orgDocs);
 
+        // Fetch all SoA entries and filter by organization
         const soaList = (await documentationService.getSoAEntries()) || [];
-        setSoas(Array.isArray(soaList) ? soaList : []);
-        console.log("📘 SoA entries fetched:", soaList);
+        const orgSoas = (Array.isArray(soaList) ? soaList : []).filter(
+          (s) => s.organization === user?.organization
+        );
+        setSoas(orgSoas);
+        console.log("📘 SoA entries fetched (org filtered):", orgSoas);
 
-        // compute counts per soa
+        // Compute counts per SoA
         const counts = {};
-        (Array.isArray(soaList) ? soaList : []).forEach((s) => {
+        orgSoas.forEach((s) => {
           counts[s.id] = 0;
         });
-        (Array.isArray(docs) ? docs : []).forEach((d) => {
+        orgDocs.forEach((d) => {
           const sid = d.soaId ?? d.soa?.id ?? d.soaIdString ?? null;
           if (sid != null) counts[sid] = (counts[sid] ?? 0) + 1;
         });
@@ -127,6 +137,7 @@ const MLD = () => {
         setUploadedCounts({});
       }
     };
+
     fetchData();
   }, []);
 
@@ -160,22 +171,24 @@ const MLD = () => {
           user.department.name === doc.departmentName
         )
           docCount++;
-        const refs = Array.isArray(soa.documentRef)
-          ? soa.documentRef
-          : [soa.documentRef];
+      });
+    });
+    soas.forEach((soa) => {
+      const refs = Array.isArray(soa.documentRef)
+        ? soa.documentRef
+        : [soa.documentRef];
 
-        refs.forEach((ref) => {
-          for (const key in DOCUMENT_MAPPING) {
-            if (
-              DOCUMENT_MAPPING[key].docs?.includes(ref) &&
-              DOCUMENT_MAPPING[key].dept.some((d) =>
-                user.department.name.includes(d)
-              )
-            ) {
-              docsSet.add(ref);
-            }
+      refs.forEach((ref) => {
+        for (const key in DOCUMENT_MAPPING) {
+          if (
+            DOCUMENT_MAPPING[key].docs?.includes(ref) &&
+            DOCUMENT_MAPPING[key].dept.some((d) =>
+              user.department.name.includes(d)
+            )
+          ) {
+            docsSet.add(ref);
           }
-        });
+        }
       });
     });
 
@@ -227,6 +240,7 @@ const MLD = () => {
           controlId: "",
           uploaderName: user?.name ?? "Unknown",
           departmentName: user?.department?.name ?? "N/A",
+          organization: user.organization,
         });
 
         setModal({
@@ -737,7 +751,6 @@ const MLD = () => {
                       : [s.documentRef]
                     ).includes(docName)
                   );
-
                   const soaId = soa?.id;
                   const count = getUploadedCount(soaId);
                   const hasUploaded = count > 0;
@@ -909,7 +922,13 @@ const MLD = () => {
                               Uploading...
                             </>
                           ) : hasUploaded ? (
-                            <Check size={20} style={{ marginRight: "25px",marginLeft: "25px" }}/>
+                            <Check
+                              size={20}
+                              style={{
+                                marginRight: "25px",
+                                marginLeft: "25px",
+                              }}
+                            />
                           ) : (
                             <>
                               <UploadCloud
@@ -941,7 +960,7 @@ const MLD = () => {
                                 style={{
                                   backgroundColor: "#2ecc71",
                                   color: "white",
-                                  padding:"2px"
+                                  padding: "2px",
                                 }}
                               >
                                 Approved
