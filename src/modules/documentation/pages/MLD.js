@@ -79,6 +79,8 @@ const MLD = () => {
     return clauseMatches;
   };
 
+  // Count uploaded documents for the current user (org + dept)
+
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > lastScrollY) {
@@ -225,10 +227,11 @@ const MLD = () => {
     const docsSet = new Set();
     let docCount = 0;
     documents.forEach((doc) => {
-      soas.forEach((soa) => {
+      uniqueMappedDocs.forEach((soa) => {
         if (
-          doc.soaId === soa.id.toString() &&
-          user.department.name === doc.departmentName
+          doc.uniqueClause === soa.uniqueClause &&
+          user.department.name === doc.departmentName &&
+          user.organization === doc.organization
         )
           docCount++;
       });
@@ -283,11 +286,17 @@ const MLD = () => {
     }
   };
 
+  const userMappedDocs = documents.filter(
+    (item) => item.departmentName === user?.department?.name && item.organization === user.organization
+  );
+
+  const totalDocsToUpload = userMappedDocs.length;
+
   const handleSingleButtonUpload = async (id) => {
     const item = uniqueMappedDocs.find((d) => d.id === id);
     if (!item) return;
 
-    const { clause,uniqueClause ,docName } = item;
+    const { clause, uniqueClause, docName } = item;
 
     const input = document.createElement("input");
     input.type = "file";
@@ -721,11 +730,11 @@ const MLD = () => {
         >
           <div>
             <span style={{ fontWeight: 600 }}>Total Documents to Upload:</span>{" "}
-            {userDocs.length}
+            {uniqueMappedDocs.length}
           </div>
           <div>
             <span style={{ fontWeight: 600 }}>Documents Uploaded:</span>{" "}
-            {docCount}
+            {totalDocsToUpload}
           </div>
         </div>
       </div>
@@ -780,7 +789,7 @@ const MLD = () => {
           className="controls-right"
           style={{ color: "#666", fontSize: "14px" }}
         >
-          Showing {userDocs.length} upload entries
+          Showing {uniqueMappedDocs.length} upload entries
         </div>
       </div>
 
