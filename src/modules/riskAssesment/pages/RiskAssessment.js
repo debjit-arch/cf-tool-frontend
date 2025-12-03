@@ -488,6 +488,46 @@ const RiskAssessment = () => {
             </p>
           </div>
         )}
+        <div
+          id="sample-risk-card"
+          style={actionCardStyle}
+          onClick={() => history.push("/risk-assessment/soa")}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.transform = "translateY(-3px)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.transform = "translateY(0)")
+          }
+        >
+          <h3
+            style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#2c3e50" }}
+          >
+            SoA
+          </h3>
+          <p style={{ margin: 0, fontSize: "13px", color: "#7b979aff" }}>
+            Automatically created SoA as per applicable control.
+          </p>
+        </div>
+        <div
+          id="sample-risk-card"
+          style={actionCardStyle}
+          onClick={() => history.push("/risk-assessment/mld")}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.transform = "translateY(-3px)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.transform = "translateY(0)")
+          }
+        >
+          <h3
+            style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#2c3e50" }}
+          >
+            List of Documents
+          </h3>
+          <p style={{ margin: 0, fontSize: "13px", color: "#7f8c8d" }}>
+            The documents your need to upload as per SoA.
+          </p>
+        </div>
       </div>
     </div>
   );

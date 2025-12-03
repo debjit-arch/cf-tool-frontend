@@ -272,7 +272,7 @@ const SoaPage = () => {
           transform: showButtons ? "translateY(0)" : "translateY(-100%)",
           opacity: showButtons ? 1 : 0,
         }}
-        onClick={() => history.push("/documentation")}
+        onClick={() => history.push("/risk-assessment")}
       >
         ← Back to Dashboard{" "}
       </button>

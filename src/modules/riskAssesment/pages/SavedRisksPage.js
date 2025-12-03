@@ -1288,14 +1288,14 @@ const SavedRisksPage = () => {
                 const role = user?.role || "";
                 if (role === "super_admin") {
                   setRedirectMessage(" Redirecting to Soa Page.");
-                  history.push("/documentation/soa");
+                  history.push("/risk-assessment/soa");
                 } else {
                   setRedirectMessage(
                     "⚠️ You do not have permission to access SoA. Redirecting to master list of documents..."
                   );
                   setTimeout(() => {
                     setRedirectMessage(""); // Clear after redirect
-                    history.push("/documentation/mld");
+                    history.push("/risk-assessment/mld");
                   }, 2000);
                 }
               } catch (error) {

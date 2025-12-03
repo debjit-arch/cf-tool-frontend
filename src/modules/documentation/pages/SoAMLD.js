@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useHistory } from "react-router-dom";
 import documentationService from "../services/documentationService";
 import { Trash2, UploadCloud, Calendar, Check } from "lucide-react";
-import { DOCUMENT_MAPPING, getExpandedDocumentRows } from "../constants";
+import { DOCUMENT_MAPPING } from "../constants";
 import Modal from "../../../components/navigations/Modal";
 
 import Joyride, { STATUS } from "react-joyride";
@@ -22,62 +22,6 @@ const MLD = () => {
 
   const [showButtons, setShowButtons] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
-
-  // Convert DOCUMENT_MAPPING into a uniform array
-  const mappedDocs = Object.entries(DOCUMENT_MAPPING)
-    .flatMap(([clause, entry]) =>
-      entry.docs.map((docName, index) => ({
-        clause,
-        docName,
-        department: entry.dept[index] || entry.dept[0],
-        type: entry.type[index] || entry.type[0],
-        uniqueClause: `${clause}__${docName}__${index}`, // unique per row
-      }))
-    )
-    .filter((item) => {
-      if (!user || !user.department || !user.department.name) return true;
-
-      const userDept = user.department.name.trim();
-
-      // Allow admins to see everything
-      if (userDept.toLowerCase() === "admin") return true;
-
-      // Normal users: filter by exact department match
-      return item.department === userDept;
-    });
-
-  // Remove duplicate document names
-  const uniqueMappedDocs = Object.values(
-    mappedDocs.reduce((acc, item, index) => {
-      if (!acc[item.docName]) {
-        acc[item.docName] = { ...item, id: `doc-${index}` }; // unique per row
-      }
-      return acc;
-    }, {})
-  );
-
-  // Robust finder: tries several possible backend fields to discover the uploaded doc
-  const findDoc = (item) => {
-    if (!item) return undefined;
-
-    // First match by docName
-    const nameMatches = documents.find(
-      (d) =>
-        (d.docName && d.docName === item.docName) ||
-        (d.name && d.name === item.docName)
-    );
-    if (nameMatches) return nameMatches;
-
-    // fallback: match by clause
-    const clauseMatches = documents.find(
-      (d) =>
-        String(d.clause) === String(item.uniqueClause) ||
-        String(d.soaId) === String(item.uniqueClause) ||
-        String(d.soa?.id) === String(item.uniqueClause) ||
-        String(d.soaIdString) === String(item.uniqueClause)
-    );
-    return clauseMatches;
-  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -197,13 +141,9 @@ const MLD = () => {
     fetchData();
   }, []);
 
-  const handlePreviewClick = (item) => {
-    // item can be an object { clause, docName, ... } OR a string clause/docName
-    const searchItem =
-      typeof item === "string" ? { docName: item, clause: item } : item;
-
-    const doc = findDoc(searchItem);
-    if (doc && doc.url) {
+  const handlePreviewClick = (soa) => {
+    const doc = documents.find((d) => String(d.soaId) === String(soa.id));
+    if (doc) {
       const baseUrl = "https://safesphere.duckdns.org/doc-service";
       const filePath = doc.url.startsWith("/") ? doc.url : `/${doc.url}`;
       const encodedPath = encodeURI(filePath);
@@ -283,12 +223,7 @@ const MLD = () => {
     }
   };
 
-  const handleSingleButtonUpload = async (id) => {
-    const item = uniqueMappedDocs.find((d) => d.id === id);
-    if (!item) return;
-
-    const { clause,uniqueClause ,docName } = item;
-
+  const handleSingleButtonUpload = async (soaId) => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "*/*";
@@ -297,33 +232,16 @@ const MLD = () => {
       if (!file) return;
 
       try {
-        // Use unique row id instead of clause
-        setUploading((prev) => ({ ...prev, [id]: true }));
+        setUploading((prev) => ({ ...prev, [soaId]: true }));
 
         const uploadedDoc = await documentationService.uploadDocument({
           file,
-          soaId: uniqueClause,
-          docName,
-          controlId: uniqueClause,
+          soaId,
+          controlId: "",
           uploaderName: user?.name ?? "Unknown",
           departmentName: user?.department?.name ?? "N/A",
-          organization: user?.organization,
+          organization: user.organization,
         });
-
-        const docs = (await documentationService.getDocuments()) || [];
-        const orgDocs = docs.filter(
-          (d) => d.organization === user?.organization
-        );
-        setDocuments(orgDocs);
-
-        // recompute uploaded counts
-        const counts = {};
-        Object.keys(DOCUMENT_MAPPING).forEach((k) => (counts[k] = 0));
-        (orgDocs || []).forEach((d) => {
-          const sid = d.clause ?? d.soaId ?? d.soa?.id ?? d.soaIdString ?? null;
-          if (sid != null) counts[String(sid)] = (counts[String(sid)] ?? 0) + 1;
-        });
-        setUploadedCounts(counts);
 
         setModal({
           isOpen: true,
@@ -332,42 +250,46 @@ const MLD = () => {
           showCancel: false,
           onConfirm: () => setModal((m) => ({ ...m, isOpen: false })),
         });
+
+        // refresh documents and counts
+        const docs = (await documentationService.getDocuments()) || [];
+        setDocuments(docs || []);
+        const counts = {};
+        (soas || []).forEach((s) => (counts[s.id] = 0));
+        (docs || []).forEach((d) => {
+          const sid = d.soaId ?? d.soa?.id ?? d.soaIdString ?? null;
+          if (sid != null) counts[sid] = (counts[sid] ?? 0) + 1;
+        });
+        setUploadedCounts(counts);
       } catch (err) {
         console.error("Upload failed:", err);
         setModal({
           isOpen: true,
           title: "Failure",
-          message: "Upload failed — please try again later.",
+          message: "Upload Failed please try again in some time.",
           showCancel: false,
           onConfirm: () => setModal((m) => ({ ...m, isOpen: false })),
         });
       } finally {
-        // stop uploading by id
-        setUploading((prev) => ({ ...prev, [id]: false }));
+        setUploading((prev) => ({ ...prev, [soaId]: false }));
       }
     };
     input.click();
   };
 
-  const handleDeleteForSoA = async (clause, docName) => {
+  const handleDeleteForSoA = async (soaId) => {
     setModal({
       isOpen: true,
       title: "Confirm Delete",
       message:
-        "Are you sure you want to delete the uploaded document(s) for this item?",
+        "Are you sure you want to delete the uploaded document(s) for this SoA?",
       showCancel: true,
       onConfirm: async () => {
         setModal((m) => ({ ...m, isOpen: false }));
         try {
-          // find linked docs by clause or docName
-          const linkedDocs = documents.filter((doc) => {
-            const sid =
-              doc.clause ?? doc.soaId ?? doc.soa?.id ?? doc.soaIdString;
-            const matchesClause = sid != null && String(sid) === String(clause);
-            const matchesName =
-              doc.docName && String(doc.docName) === String(docName);
-            return matchesClause || matchesName;
-          });
+          const linkedDocs = documents.filter(
+            (doc) => String(doc.soaId) === String(soaId)
+          );
 
           for (const doc of linkedDocs) {
             await documentationService.deleteDocument(doc.id);
@@ -378,21 +300,19 @@ const MLD = () => {
           );
           setDocuments(updatedDocs);
 
-          // recompute counts
+          // Recompute uploaded counts
           const counts = {};
-          Object.keys(DOCUMENT_MAPPING).forEach((k) => (counts[k] = 0));
+          (soas || []).forEach((s) => (counts[s.id] = 0));
           (updatedDocs || []).forEach((d) => {
-            const sid =
-              d.clause ?? d.soaId ?? d.soa?.id ?? d.soaIdString ?? null;
-            if (sid != null)
-              counts[String(sid)] = (counts[String(sid)] ?? 0) + 1;
+            const sid = d.soaId ?? d.soa?.id ?? d.soaIdString ?? null;
+            if (sid != null) counts[sid] = (counts[sid] ?? 0) + 1;
           });
           setUploadedCounts(counts);
 
-          // clear selectedFiles for that clause key if present
+          // Clear selected files for this SoA
           setSelectedFiles((prev) => {
             const copy = { ...prev };
-            delete copy[clause];
+            delete copy[soaId];
             return copy;
           });
 
@@ -408,11 +328,11 @@ const MLD = () => {
           setModal({
             isOpen: true,
             title: "Failure",
-            message: "Delete failed — please try again.",
+            message: "Documents Delete Failed",
             showCancel: false,
             onConfirm: () => setModal((m) => ({ ...m, isOpen: false })),
           });
-        }
+        } // call your delete function
       },
     });
   };
@@ -516,101 +436,6 @@ const MLD = () => {
     zIndex: 99,
   };
 
-  // =============================
-  // Shared Cell Style
-  // =============================
-  const cellCenter = {
-    padding: "12px 14px",
-    color: "#2c3e50",
-    verticalAlign: "middle",
-    textAlign: "center",
-  };
-
-  // =============================
-  // Index Column
-  // =============================
-  const cellIndexStyle = {
-    ...cellCenter,
-    color: "#495057",
-    fontWeight: "600",
-  };
-
-  // =============================
-  // Document Name (clickable)
-  // =============================
-  const cellDocStyle = {
-    padding: "12px 14px",
-    color: "#3498db",
-    verticalAlign: "middle",
-    cursor: "pointer",
-    textDecoration: "underline",
-  };
-
-  // =============================
-  // Upload Button Style
-  // =============================
-  const uploadBtnStyle = {
-    border: "1px solid #ccc",
-    borderRadius: "6px",
-    padding: "4px 8px",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  };
-
-  // =============================
-  // Actions Cell
-  // =============================
-  const actionCellStyle = {
-    padding: "12px 14px",
-    verticalAlign: "middle",
-    textAlign: "center",
-    display: "flex",
-    gap: "4px",
-    justifyContent: "center",
-  };
-
-  // =============================
-  // Approved Label
-  // =============================
-  const approvedLabelStyle = {
-    backgroundColor: "#2ecc71",
-    color: "white",
-    padding: "2px 6px",
-    borderRadius: "4px",
-  };
-
-  // =============================
-  // Approve Button
-  // =============================
-  const approveBtnStyle = {
-    backgroundColor: "#2ecc71",
-    color: "white",
-    border: "none",
-    borderRadius: "6px",
-    padding: "4px 6px",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  };
-
-  // =============================
-  // Delete Button
-  // =============================
-  const deleteBtnStyle = {
-    backgroundColor: "#e74c3c",
-    color: "white",
-    border: "none",
-    borderRadius: "6px",
-    padding: "4px 6px",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  };
-
   const tableContainerStyle = { width: "100%", overflowX: "auto" };
 
   const { docCount, userDocs } = getDocsForUser(
@@ -685,7 +510,7 @@ const MLD = () => {
           transform: showButtons ? "translateY(0)" : "translateY(-100%)",
           opacity: showButtons ? 1 : 0,
         }}
-        onClick={() => history.push("/documentation")}
+        onClick={() => history.push("/risk-assessment")}
       >
         ← Back to Dashboard{" "}
       </button>
@@ -904,7 +729,7 @@ const MLD = () => {
               </tr>
             </thead>
             <tbody>
-              {mappedDocs.length === 0 ? (
+              {userDocs.length === 0 ? (
                 <tr>
                   <td
                     colSpan="8"
@@ -918,25 +743,37 @@ const MLD = () => {
                   </td>
                 </tr>
               ) : (
-                uniqueMappedDocs.map((item, idx) => {
-                  const doc = findDoc(item);
-                  const hasUploaded = !!doc;
+                userDocs.map((docName, idx) => {
+                  // Find the SoA corresponding to this docName
+                  const soa = filteredAndSortedSoas.find((s) =>
+                    (Array.isArray(s.documentRef)
+                      ? s.documentRef
+                      : [s.documentRef]
+                    ).includes(docName)
+                  );
+                  const soaId = soa?.id;
+                  const count = getUploadedCount(soaId);
+                  const hasUploaded = count > 0;
+
+                  const doc = documents.find(
+                    (d) => String(d.soaId) === String(soaId)
+                  );
+
+                  // Department from mapping
+                  const departmentFromMapping = user?.department?.name || "—";
 
                   const approvalDate = doc?.approvalDate
                     ? new Date(doc.approvalDate).toISOString().split("T")[0]
                     : "—";
-
                   const nextApprovalDate = doc?.nextApprovalDate
                     ? new Date(doc.nextApprovalDate).toISOString().split("T")[0]
                     : "—";
 
                   const handleApprove = async () => {
                     if (!doc) return;
-
                     const today = new Date();
                     const nextDate = new Date();
                     nextDate.setDate(today.getDate() + 365);
-
                     try {
                       const updatedDoc =
                         await documentationService.updateApprovalDate(
@@ -944,15 +781,13 @@ const MLD = () => {
                           today.getTime(),
                           nextDate.getTime()
                         );
-
                       setDocuments((prevDocs) =>
                         prevDocs.map((d) => (d.id === doc.id ? updatedDoc : d))
                       );
-
                       setModal({
                         isOpen: true,
                         title: "Success",
-                        message: "Document Approved",
+                        message: "Documents Approved",
                         showCancel: false,
                         onConfirm: () =>
                           setModal((m) => ({ ...m, isOpen: false })),
@@ -962,7 +797,7 @@ const MLD = () => {
                       setModal({
                         isOpen: true,
                         title: "Failed",
-                        message: "Approval Failed",
+                        message: "Documents Approve Failed",
                         showCancel: false,
                         onConfirm: () =>
                           setModal((m) => ({ ...m, isOpen: false })),
@@ -972,53 +807,119 @@ const MLD = () => {
 
                   return (
                     <tr
-                      key={item.id}
+                      key={soaId}
                       style={{ borderBottom: "1px solid #f1f1f1" }}
                     >
-                      {/* Index */}
-                      <td style={cellIndexStyle}>{idx + 1}</td>
-
-                      {/* Document Name from MLD mapping */}
                       <td
-                        style={cellDocStyle}
-                        onClick={() => handlePreviewClick(item)}
+                        style={{
+                          padding: "12px 14px",
+                          color: "#495057",
+                          verticalAlign: "middle",
+                          textAlign: "center",
+                          userSelect: "none",
+                          fontWeight: "600",
+                        }}
                       >
-                        {item.docName}
+                        {idx + 1}
                       </td>
 
-                      {/* Department */}
-                      <td style={cellCenter}>{item.department || "—"}</td>
+                      {/* Document Name */}
+                      <td
+                        style={{
+                          padding: "12px 14px",
+                          color: "#3498db",
+                          verticalAlign: "middle",
+                          cursor: "pointer",
+                          textDecoration: "underline",
+                        }}
+                        onClick={() => handlePreviewClick(soa)}
+                      >
+                        {Array.isArray(soa.documentRef)
+                          ? soa.documentRef.join(", ")
+                          : soa.documentRef}
+                      </td>
 
-                      {/* Uploader */}
-                      <td style={cellCenter}>{doc?.uploaderName ?? "—"}</td>
+                      {/* Department from mapping */}
+                      <td
+                        style={{
+                          padding: "12px 14px",
+                          color: "#2c3e50",
+                          verticalAlign: "middle",
+                          textAlign: "center",
+                        }}
+                      >
+                        {departmentFromMapping}
+                      </td>
+
+                      {/* Uploader Name */}
+                      <td
+                        style={{
+                          padding: "12px 14px",
+                          color: "#2c3e50",
+                          verticalAlign: "middle",
+                          textAlign: "center",
+                        }}
+                      >
+                        {doc?.uploaderName ?? "—"}
+                      </td>
 
                       {/* Approval Date */}
-                      <td style={cellCenter}>{approvalDate}</td>
+                      <td
+                        style={{
+                          padding: "12px 14px",
+                          color: "#2c3e50",
+                          verticalAlign: "middle",
+                          textAlign: "center",
+                        }}
+                      >
+                        {approvalDate}
+                      </td>
 
                       {/* Next Approval Date */}
-                      <td style={cellCenter}>{nextApprovalDate}</td>
+                      <td
+                        style={{
+                          padding: "12px 14px",
+                          color: "#2c3e50",
+                          verticalAlign: "middle",
+                          textAlign: "center",
+                        }}
+                      >
+                        {nextApprovalDate}
+                      </td>
 
-                      {/* Upload Button */}
-                      <td style={cellCenter}>
+                      {/* Upload File */}
+                      <td
+                        style={{
+                          padding: "12px 14px",
+                          verticalAlign: "middle",
+                          textAlign: "center",
+                        }}
+                      >
                         <button
-                          onClick={() => handleSingleButtonUpload(item.id)}
+                          onClick={() => handleSingleButtonUpload(soaId)}
                           id="mld-upload-btn"
                           style={{
-                            ...uploadBtnStyle,
                             backgroundColor: hasUploaded
                               ? "#2ecc71"
                               : "#f1f1f1",
+                            border: "1px solid #ccc",
+                            borderRadius: "6px",
+                            padding: "4px 8px",
+                            cursor: hasUploaded ? "default" : "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
                             color: hasUploaded ? "white" : "inherit",
                           }}
-                          disabled={hasUploaded || uploading[item.id]}
+                          disabled={hasUploaded || uploading[soaId]}
                         >
-                          {uploading[item.id] ? (
+                          {uploading[soaId] ? (
                             <>
                               <UploadCloud
                                 size={16}
-                                style={{ marginRight: 4 }}
+                                style={{ marginRight: "4px" }}
                               />
-                              Uploading…
+                              Uploading...
                             </>
                           ) : hasUploaded ? (
                             <Check
@@ -1032,7 +933,7 @@ const MLD = () => {
                             <>
                               <UploadCloud
                                 size={16}
-                                style={{ marginRight: 4 }}
+                                style={{ marginRight: "4px" }}
                               />
                               Upload
                             </>
@@ -1041,21 +942,50 @@ const MLD = () => {
                       </td>
 
                       {/* Actions */}
-                      <td style={actionCellStyle}>
+                      {/* Actions */}
+                      <td
+                        style={{
+                          padding: "12px 14px",
+                          verticalAlign: "middle",
+                          textAlign: "center",
+                          display: "flex",
+                          gap: "4px",
+                          justifyContent: "center",
+                        }}
+                      >
                         {hasUploaded && (
                           <>
                             {doc?.approvalDate ? (
-                              <div style={approvedLabelStyle}>Approved</div>
+                              <div
+                                style={{
+                                  backgroundColor: "#2ecc71",
+                                  color: "white",
+                                  padding: "2px",
+                                }}
+                              >
+                                Approved
+                              </div>
                             ) : (
+                              // Only show Approve button if user is Risk Owner
                               user?.role === "risk_owner" && (
                                 <button
                                   id="mld-approve-btn"
                                   onClick={handleApprove}
-                                  style={approveBtnStyle}
+                                  style={{
+                                    backgroundColor: "#2ecc71",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "6px",
+                                    padding: "4px 6px",
+                                    cursor: "pointer",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                  }}
                                 >
                                   <Calendar
                                     size={16}
-                                    style={{ marginRight: 4 }}
+                                    style={{ marginRight: "4px" }}
                                   />
                                   Approve
                                 </button>
@@ -1063,11 +993,19 @@ const MLD = () => {
                             )}
 
                             <button
+                              onClick={() => handleDeleteForSoA(soaId)}
                               id="mld-delete-btn"
-                              onClick={() =>
-                                handleDeleteForSoA(item.clause, item.docName)
-                              }
-                              style={deleteBtnStyle}
+                              style={{
+                                backgroundColor: "#e74c3c",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "6px",
+                                padding: "4px 6px",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
                             >
                               <Trash2 size={16} />
                             </button>

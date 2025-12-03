@@ -300,7 +300,7 @@ const Documentation = () => {
         {role === "super_admin" && (
           <>
             {/* SoA */}
-            <div
+            {/* <div
               style={{
                 ...actionCardStyle,
                 background: "linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%)",
@@ -321,10 +321,10 @@ const Documentation = () => {
               <p style={{ margin: 0, fontSize: "13px", opacity: 0.9 }}>
                 Automatically create Statement of Applicability from controls
               </p>
-            </div>
+            </div> */}
 
             {/* Control Library */}
-            <div
+            {/* <div
               style={{
                 ...actionCardStyle,
                 background: "linear-gradient(135deg, #f39c12 0%, #d35400 100%)",
@@ -345,7 +345,7 @@ const Documentation = () => {
               <p style={{ margin: 0, fontSize: "13px", opacity: 0.9 }}>
                 Browse and manage security controls
               </p>
-            </div>
+            </div> */}
           </>
         )}
 

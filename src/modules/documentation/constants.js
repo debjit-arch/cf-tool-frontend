@@ -36,12 +36,9 @@ export const DOCUMENT_MAPPING = {
     docs: ["Threat Intelligence Policy"],
   },
   5.8: {
-    type: ["POL","Guideline"],
+    type: ["POL", "Guideline"],
     dept: ["Information Security Officer (ISO)"],
-    docs: [
-      "Information Security Policy",
-      "SDLC PROCESS & SECURE CODING",
-    ],
+    docs: ["Information Security Policy", "SDLC PROCESS & SECURE CODING"],
   },
   5.9: {
     type: ["POL"],
@@ -49,12 +46,9 @@ export const DOCUMENT_MAPPING = {
     docs: ["Asset Management Policy"],
   },
   "5.10": {
-    type: ["POL","POL"],
+    type: ["POL", "POL"],
     dept: ["Admin & Facilities", "IT Department"],
-    docs: [
-      "Asset Management Policy",
-      "Acceptable Use of Assets Policy",
-    ],
+    docs: ["Asset Management Policy", "Acceptable Use of Assets Policy"],
   },
   5.11: {
     type: ["POL"],
@@ -486,4 +480,27 @@ export const DOCUMENT_MAPPING = {
     dept: ["IT Infra", "IT Applications"],
     docs: ["Operations Security Procedure"],
   },
+};
+
+export const getExpandedDocumentRows = () => {
+  const rows = [];
+
+  Object.entries(DOCUMENT_MAPPING).forEach(([control, item]) => {
+    const types = Array.isArray(item.type) ? item.type : [item.type];
+    const depts = Array.isArray(item.dept) ? item.dept : [item.dept];
+    const docs = Array.isArray(item.docs) ? item.docs : [item.docs];
+
+    const maxLength = Math.max(types.length, depts.length, docs.length);
+
+    for (let i = 0; i < maxLength; i++) {
+      rows.push({
+        control,
+        type: types[i] ?? types[0],
+        dept: depts[i] ?? depts[0],
+        doc: docs[i] ?? docs[0],
+      });
+    }
+  });
+
+  return rows;
 };

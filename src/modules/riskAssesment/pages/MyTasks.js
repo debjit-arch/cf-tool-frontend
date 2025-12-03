@@ -57,7 +57,9 @@ const MyTasks = () => {
         if (!mounted) return;
 
         const filteredTasks = allTasks.filter(
-          (t) => String(t.employee) === String(user.name || user._id)
+          (t) =>
+            String(t.employee) === String(user.name || user._id) &&
+            t.organization === user.organization
         );
         setTasks(filteredTasks);
       } catch (error) {

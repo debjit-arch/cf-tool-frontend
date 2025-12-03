@@ -57,7 +57,7 @@ const ControlsPage = () => {
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!newControl.category || !newControl.description) return;
-    const user = JSON.parse(sessionStorage.getItem(user));
+    const user = JSON.parse(sessionStorage.getItem("user"));
     try {
       const addedControl = await documentationService.addControl({
         category: newControl.category,

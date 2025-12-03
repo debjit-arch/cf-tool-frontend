@@ -23,6 +23,7 @@ import ControlsPage from "./modules/documentation/pages/ControlPage";
 import ReportsPage from "./modules/documentation/pages/ReportPage";
 import DocumentationSettingsPage from "./modules/documentation/pages/DocumentationSettingsPage";
 import MLD from "./modules/documentation/pages/MLD";
+import SoAMLD from "./modules/documentation/pages/SoAMLD";
 
 import GapAssessmentDashboard from "./modules/gapAssessment/pages/GapAssessment";
 import NewAssessment from "./modules/gapAssessment/pages/NewAssessment";
@@ -84,12 +85,24 @@ function App() {
             <RoleBasedRoute
               path="/risk-assessment/saved"
               component={SavedRisksPage}
-              allowedRoles={["risk_owner","risk_identifier","risk_manager", "super_admin","root"]}
+              allowedRoles={[
+                "risk_owner",
+                "risk_identifier",
+                "risk_manager",
+                "super_admin",
+                "root",
+              ]}
             />
             <RoleBasedRoute
-              path="/documentation/soa"
+              path="/risk-assessment/soa"
               component={SoaPage}
-              allowedRoles={["super_admin"]}
+              allowedRoles={[
+                "risk_owner",
+                "risk_identifier",
+                "risk_manager",
+                "super_admin",
+                "root",
+              ]}
             />
 
             <ProtectedRoute
@@ -101,7 +114,7 @@ function App() {
               path="/risk-assessment/my-tasks"
               component={MyTasks}
             />
-
+            <ProtectedRoute path="/risk-assessment/mld" component={SoAMLD} />
             <ProtectedRoute
               exact
               path="/documentation"
@@ -109,7 +122,7 @@ function App() {
             />
             {/* <ProtectedRoute path="/documentation/soa" component={SoaPage} /> */}
             <ProtectedRoute
-              path="/documentation/controls"
+              path="/risk-assessment/controls"
               component={ControlsPage}
             />
             <ProtectedRoute

@@ -87,7 +87,7 @@ const Dashboard = () => {
                 {user.name || "User"}
               </span>
               <span className="text-xs text-gray-500">
-                {user.role || "Consultant"}
+                {user.department.name || "Consultant"}
               </span>
             </div>
             {user && (
